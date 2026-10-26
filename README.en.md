@@ -50,7 +50,7 @@ Built on [Clean Your TV](https://github.com/Razdva122/clean-your-tv-lg-webos) (M
 - Content: Quran only, hadith only, or alternating.
 
 **Screensaver and wallpapers**
-- The Islamic screensaver replaces LG's own clock screensaver while Home is on screen.
+- LG's clock screensaver never shows: over Home the Islamic screensaver takes its place, and over any other app (a paused YouTube video, say) the app simply stays on screen.
 - A screensaver after the idle time you choose: slowly moving photo, clock, Hijri date, a verse and the next prayer; the text drifts slightly to protect the panel.
 - 20 high-quality Islamic wallpapers under open licences, grouped for Fajr, day, Maghrib and night, changing with the prayer times, with photographer credits, an adjustable dark overlay and a live-preview picker.
 
