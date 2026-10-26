@@ -1,10 +1,10 @@
 {
   "id": "com.gathin.tvhome",
-  "version": "1.4.1",
+  "version": "2.1.0",
   "vendor": "tv-vibehack",
   "type": "web",
   "main": "index.html",
-  "title": "الرئيسية",
+  "title": "Xee Launcher",
   "icon": "brand-v2-icon.png",
   "largeIcon": "brand-v2-largeIcon.png",
   "bgColor": "#000000",

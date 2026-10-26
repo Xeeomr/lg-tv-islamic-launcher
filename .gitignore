@@ -43,3 +43,6 @@ launcher/_*.html
 
 # Upstream release workflows (not used in this repository)
 .github/workflows/
+
+# Phone-remote pairing token of this computer
+.xee-remote-token

@@ -35,40 +35,45 @@ test('LG Home arriving while resume launch is in flight is retried without anoth
  c.calls[2].reply();c.advance(5200);assert.equal(c.homeCalls().length,4);
  c.calls[3].reply();c.advance(40000);assert.equal(c.homeCalls().length,4,'at most two retries');
 });
-test('LG Home must remain foreground for 1.5 seconds, including duplicate reports',()=>{
- const c=controller();c.resume();c.calls[1].reply();c.advance(5200);c.fg(LG);c.advance(800);c.fg(LG);c.advance(400);
- assert.equal(c.homeCalls().length,2);c.advance(400);assert.equal(c.homeCalls().length,3);
+// LG Home taking the screen back right after our launch is answered at once (no dwell), so it barely shows.
+test('LG Home taking over after a recent launch is answered immediately',()=>{
+ const c=controller();c.resume();c.calls[1].reply();c.advance(5200);c.fg(LG);
+ assert.equal(c.homeCalls().length,3);c.fg(LG);assert.equal(c.homeCalls().length,3,'never launch concurrently');
 });
-test('blank and cpcover break continuous LG Home dwell',()=>{
- for(const gap of ['',COVER]){const c=controller();c.resume();c.calls[1].reply();c.advance(5200);c.fg(LG);c.advance(1200);c.fg(gap);c.advance(400);c.fg(LG);c.advance(1200);assert.equal(c.homeCalls().length,2);c.advance(400);assert.equal(c.homeCalls().length,3);}
+test('repeated LG takeovers are answered a bounded number of times',()=>{
+ const c=controller();c.resume();c.calls[1].reply();
+ for(let i=0;i<10;i++){c.fg(LG);if(c.calls.at(-1).id===HOME)c.calls.at(-1).reply();c.advance(100);}
+ assert.equal(c.homeCalls().length,7,'initial launch, resume launch and five immediate retries');
 });
 test('successful return to Home suppresses retries but late LG takeover is recovered',()=>{
  const c=controller();c.resume();c.calls[1].reply();c.fg(HOME);c.advance(6000);assert.equal(c.homeCalls().length,2);
  c.fg(LG);c.advance(1600);assert.equal(c.homeCalls().length,3);
 });
-test('a real app cancels recovery even if LG Home appears later',()=>{
- const c=controller();c.resume();c.fg('netflix');c.calls[1].reply();c.fg(LG);c.advance(20000);assert.equal(c.homeCalls().length,2);
+// Leaving any app for LG Home returns to Home, not only the apps that were on the dock at install time.
+test('leaving a real app for LG Home returns to Home',()=>{
+ const c=controller();c.resume();c.fg('netflix');c.calls[1].reply();c.fg(LG);assert.equal(c.homeCalls().length,3);
 });
 test('a real app before the first resume tick cancels the pending launch',()=>{
  const c=controller();c.power({state:'Suspend'});c.fg(COVER);c.power({state:'Active'});c.fg('netflix');c.advance(400);assert.equal(c.homeCalls().length,1);
 });
 test('power off cancels recovery',()=>{
- for(const p of [{onOff:'off',state:'Active'},{state:'Suspend'},{state:'Active Standby'}]){const c=controller();c.resume();c.calls[1].reply();c.fg(LG);c.power(p);c.advance(20000);assert.equal(c.homeCalls().length,2);}
+ for(const p of [{onOff:'off',state:'Active'},{state:'Suspend'},{state:'Active Standby'}]){const c=controller();c.resume();c.calls[1].reply();c.power(p);c.fg(LG);c.advance(20000);assert.equal(c.homeCalls().length,2);}
 });
 test('disabling Home control cancels recovery even after re-enabling it',()=>{
- const c=controller();c.resume();c.calls[1].reply();c.fg(LG);c.rpc('setHomeControl',false);c.rpc('setHomeControl',true);c.advance(20000);assert.equal(c.homeCalls().length,2);
+ const c=controller();c.resume();c.calls[1].reply();c.rpc('setHomeControl',false);c.rpc('setHomeControl',true);c.fg(LG);c.advance(20000);assert.equal(c.homeCalls().length,2);
 });
 test('explicit LG visit cancels resume recovery for both controls',()=>{
  for(const source of ['remote','settings']){const c=controller();c.resume();c.calls[1].reply();if(source==='remote')c.worker().stdout.emit('data',Buffer.from('LGHOME\n'));else c.rpc('openLGHome');assert.equal(c.calls.at(-1).id,LG);c.calls.at(-1).reply();c.fg(LG);c.advance(20000);assert.equal(c.homeCalls().length,2);}
 });
-test('guard expires after 30 seconds; duplicate Active does not extend it',()=>{
- const c=controller();c.resume();c.calls[1].reply();c.advance(28000);c.power({state:'Active'});c.advance(2000);c.fg(LG);c.advance(8000);assert.equal(c.homeCalls().length,2);
+test('guard expires after 40 seconds; duplicate Active does not extend it',()=>{
+ const c=controller();c.resume();c.calls[1].reply();c.advance(38000);c.power({state:'Active'});c.advance(2000);c.fg(LG);c.advance(8000);assert.equal(c.homeCalls().length,2);
 });
 test('timeout settles a launch and late reply cannot bypass retry cooldown',()=>{
  const c=controller();c.resume();c.fg(LG);c.advance(3200);c.calls[1].reply();c.advance(4400);assert.equal(c.homeCalls().length,2);c.advance(400);assert.equal(c.homeCalls().length,3);
 });
 test('screen watcher reset prevents retrying stale foreground data',()=>{
- const c=controller();c.resume();c.calls[1].reply();c.fg(LG);c.reset();c.advance(6000);assert.equal(c.homeCalls().length,2);c.fg(LG);c.advance(1200);assert.equal(c.homeCalls().length,2);c.advance(400);assert.equal(c.homeCalls().length,3);
+ const c=controller();c.resume();c.calls[1].reply();c.reset();c.advance(6000);assert.equal(c.homeCalls().length,2);
+ c.fg(LG);assert.equal(c.homeCalls().length,3,'a fresh report is answered');
 });
 test('new standby cycle gets a fresh bounded recovery window',()=>{
  const c=controller();c.resume();c.calls[1].reply();c.advance(32000);c.resume();c.calls[2].reply();c.fg(LG);c.advance(5200);assert.equal(c.homeCalls().length,4);
@@ -89,13 +94,12 @@ test('disabled Home routing never arms recovery on resume',()=>{
  const c=controller();c.rpc('setHomeControl',false);c.resume();c.fg(LG);c.advance(20000);assert.equal(c.homeCalls().length,1);
 });
 
-test('app exit retries a late LG takeover with the same bounded recovery',()=>{
+test('app exit answers a late LG takeover at once, then the bounded slow retry',()=>{
  const c=controller();c.fg('com.example.video');c.fg(LG);
  assert.equal(c.homeCalls().length,2);c.calls[1].reply();c.fg(HOME);c.fg(LG);
- c.advance(4800);assert.equal(c.homeCalls().length,2);
- c.advance(400);assert.equal(c.homeCalls().length,3);
+ assert.equal(c.homeCalls().length,3,'LG Home right after our launch is answered immediately');
  c.calls[2].reply();c.advance(5200);assert.equal(c.homeCalls().length,4);
- c.calls[3].reply();c.advance(40000);assert.equal(c.homeCalls().length,4);
+ c.calls[3].reply();c.advance(40000);assert.equal(c.homeCalls().length,4,'bounded');
 });
 test('new Back input cancels app-exit recovery so an intentional LG visit stays open',()=>{
  const c=controller();c.fg('com.example.video');c.fg(LG);c.calls[1].reply();c.fg(HOME);

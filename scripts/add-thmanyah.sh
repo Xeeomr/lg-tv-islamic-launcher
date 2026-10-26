@@ -11,4 +11,4 @@ unzip -q "$zip" -d "$tmp"
 copy() { found="$(find "$tmp" -type f -name "$1" | head -n 1)"; [[ -n "$found" ]] || { echo "Missing $1 in the zip" >&2; exit 1; }; cp "$found" "launcher/fonts/$1"; }
 for w in Light Regular Medium Bold; do copy "thmanyahsans-$w.woff2"; done
 for w in Regular Medium; do copy "thmanyahseriftext-$w.woff2"; done
-echo "Thmanyah added. Run ./install.sh <TV-IP> again to put it on the TV."
+echo "Thmanyah added. Run ./install.sh <TV-IP> again, then python3 scripts/push-private.py <TV-IP> so it survives automatic updates."

@@ -116,3 +116,8 @@ printf '  Open an app, then press Home to return to your launcher.\n'
 printf '  Hold Home for about 2 seconds to stop the helper and return to LG Home.\n'
 printf '  Test arrows, OK, volume, standby/wake and cold boot.\n'
 printf 'Keep Developer Mode active. Your computer can be switched off during everyday use.\n'
+if ls launcher/fonts/thmanyah*.woff2 >/dev/null 2>&1 || [[ -n "$(git ls-files --others --ignored --exclude-standard launcher/audio 2>/dev/null)" ]]; then
+  printf '\nYou have private files (Thmanyah or extra adhans). To keep them after automatic updates, run once:\n'
+  printf '  python3 scripts/push-private.py %s\n' "${TV_HOST:-TV-IP}"
+fi
+printf '\nPhone remote: open http://%s:8090 on a phone on the same network.\n' "$TV_HOST"

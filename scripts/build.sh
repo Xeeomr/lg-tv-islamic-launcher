@@ -26,7 +26,7 @@ PYPIN
 if [[ "$baseline" != published ]]; then
 # Stage from a clean set of public sources; never package local runtime state.
 cp native/app/*.js native/app/*.json native/app/*.png build/native-app/
-cp -R native/app/vendor build/native-app/
+cp -R native/app/vendor native/app/remote-ui build/native-app/
 cp native/service/*.js native/service/*.json build/native-service/
 cp native/app/state-permissions.js build/native-service/
 python3 -m scripts.helper_build --input build/native-app --output build/native-app-compat
@@ -45,10 +45,23 @@ helper=$(python3 -c 'import json; a=json.load(open("build/native-app/appinfo.jso
 python3 scripts/fix-package-data.py "$helper"
 fi
 python3 scripts/tv_web_build.py --input launcher --output build/home-app
+if [[ "${XEE_RELEASE:-}" == 1 ]]; then
+  # Public packages carry only tracked files: no personal fonts, adhans or TV data.
+  python3 - <<'PYPRUNE'
+import subprocess
+from pathlib import Path
+tracked = set(subprocess.run(['git', 'ls-files', 'launcher'], capture_output=True, text=True, check=True).stdout.split())
+for p in Path('launcher').rglob('*'):
+    if p.is_file() and p.as_posix() not in tracked:
+        staged = Path('build/home-app') / p.relative_to('launcher')
+        if staged.exists(): staged.unlink(); print('release: left out', p.as_posix())
+PYPRUNE
+fi
 python3 scripts/slim-home.py build/home-app
 # The prayer service runs in its own sandbox: give it the ws library and the TV pairing key.
 rm -rf prayer-service/ws && cp -R native/app/vendor/ws prayer-service/ws
-python3 - <<'PYKEY'
+rm -f prayer-service/ssap-key.json
+[[ "${XEE_RELEASE:-}" == 1 ]] || python3 - <<'PYKEY'
 import json, os
 from pathlib import Path
 keys = json.loads(Path('.lgtv-key.json').read_text()) if Path('.lgtv-key.json').exists() else {}

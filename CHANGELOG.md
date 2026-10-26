@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.1.0
+- Xee Launcher: new name, splash screen and icon.
+- Quran hub: radio stations, an audio mushaf read ayah by ayah with 14 reciters and khatma tracking, and live broadcasts from Masjid al-Haram and Masjid an-Nabawi.
+- Morning and evening adhkar at their time, Friday and Surat al-Kahf reminders, and fasting reminders for Arafah, Ashura and the White Days.
+- Countdown to Eid al-Fitr and Eid al-Adha after Ramadan's.
+- Night mode after Isha.
+- Xee Remote: control the TV, the Quran hub, apps and every setting from a phone on the same network.
+- Signed automatic updates from GitHub releases.
+- LG's home no longer appears when leaving an app, LG's clock screensaver is cancelled over every app, and EXIT opens Home.
+
 ## v1.2.0 — Helper recovery and Root firmware settings
 
 - Offer confirmed Helper start when firmware denies status (#59, #60).

@@ -1,8 +1,8 @@
 'use strict';
 // Talks to the TV's own remote-control API with the pairing key Home Helper already holds.
 var fs = require('fs'), os = require('os');
-// The service runs in its own sandbox and cannot see Home Helper's files, so it carries its own copy of
-// the pairing key (written at build time from .lgtv-key.json) and of the ws library.
+// The service runs in its own sandbox and cannot see Home Helper's files: Helper copies the pairing key
+// into this service's state folder, and the service carries its own copy of the ws library.
 // Same list as lgtv.py: registering with fewer permissions would narrow the shared key for every client.
 var PERMISSIONS = ['LAUNCH', 'LAUNCH_WEBAPP', 'APP_TO_APP', 'CLOSE', 'TEST_OPEN', 'TEST_PROTECTED', 'CONTROL_AUDIO',
   'CONTROL_DISPLAY', 'CONTROL_INPUT_JOYSTICK', 'CONTROL_INPUT_MEDIA_RECORDING', 'CONTROL_INPUT_MEDIA_PLAYBACK', 'CONTROL_INPUT_TV',
@@ -10,7 +10,9 @@ var PERMISSIONS = ['LAUNCH', 'LAUNCH_WEBAPP', 'APP_TO_APP', 'CLOSE', 'TEST_OPEN'
   'READ_RUNNING_APPS', 'READ_TV_CHANNEL_LIST', 'WRITE_NOTIFICATION_TOAST', 'READ_POWER_STATE', 'READ_COUNTRY_INFO', 'CONTROL_INPUT_TEXT',
   'CONTROL_MOUSE_AND_KEYBOARD', 'READ_INSTALLED_APPS', 'READ_SETTINGS', 'READ_STORAGE_DEVICE_LIST'];
 function readKey() {
-  var k = JSON.parse(fs.readFileSync(__dirname + '/ssap-key.json', 'utf8'));
+  // Home Helper places the key in this service's state folder; local builds may also bundle a copy.
+  var k = null;
+  [__dirname + '/state/ssap-key.json', __dirname + '/ssap-key.json'].some(function (p) { try { k = JSON.parse(fs.readFileSync(p, 'utf8')); return true; } catch (_) { return false; } });
   if (!k || typeof k.key !== 'string' || !k.key) throw new Error('missing-pairing');
   return k.key;
 }

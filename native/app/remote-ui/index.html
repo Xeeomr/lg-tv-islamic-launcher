@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#07090d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Xee Remote">
+  <title>Xee Remote</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="icon" href="icon-192.png">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="pair" class="screen" hidden>
+    <div class="pair-card">
+      <div class="brand"><span class="brand-x">Xee</span> <span class="brand-l">Remote</span></div>
+      <p class="muted">تحكّم في Xee Launcher من موبايلك</p>
+      <button class="primary" id="pairStart">ربط هذا الموبايل</button>
+      <div id="pairCode" hidden>
+        <p>اكتب الرمز الظاهر الآن على شاشة التلفاز</p>
+        <input id="codeInput" inputmode="numeric" maxlength="4" autocomplete="one-time-code" placeholder="••••">
+        <button class="primary" id="pairConfirm">تأكيد</button>
+      </div>
+      <p id="pairError" class="error"></p>
+    </div>
+  </div>
+
+  <div id="app" hidden>
+    <header class="top">
+      <div class="brand small"><span class="brand-x">Xee</span> <span class="brand-l">Remote</span></div>
+      <div id="conn" class="conn">متصل</div>
+    </header>
+
+    <section class="tab" id="tab-home">
+      <div class="card hero">
+        <div class="hero-row">
+          <div>
+            <div class="muted" id="cityLine">—</div>
+            <div class="next" id="nextLine">—</div>
+            <div class="muted small" id="hijriLine"></div>
+          </div>
+          <div class="count" id="countdown"></div>
+        </div>
+        <div class="times" id="timesRow"></div>
+      </div>
+
+      <div class="card now" id="nowCard" hidden>
+        <div class="now-label">يعمل الآن</div>
+        <div class="now-title" id="nowTitle"></div>
+        <div class="now-ctrl" id="nowCtrl">
+          <button class="round" data-home="mushaf.prev" id="btnPrev" aria-label="السابق">⟩</button>
+          <button class="round big" data-home="mushaf.pause" id="btnPause" aria-label="إيقاف مؤقت">❚❚</button>
+          <button class="round" data-home="mushaf.next" id="btnNext" aria-label="التالي">⟨</button>
+          <button class="round stop" data-home="radio.stop" aria-label="إيقاف">■</button>
+        </div>
+      </div>
+
+      <div class="card remote">
+        <div class="dpad">
+          <button class="d up" data-key="UP" aria-label="أعلى"></button>
+          <button class="d right" data-key="RIGHT" aria-label="يمين"></button>
+          <button class="ok" data-key="ENTER">OK</button>
+          <button class="d left" data-key="LEFT" aria-label="يسار"></button>
+          <button class="d down" data-key="DOWN" aria-label="أسفل"></button>
+        </div>
+        <div class="row3">
+          <button class="pill" data-key="BACK">رجوع</button>
+          <button class="pill gold" data-key="HOME">الرئيسية</button>
+          <button class="pill" data-key="EXIT">خروج</button>
+        </div>
+        <div class="volume">
+          <button class="round" data-vol="down" aria-label="خفض الصوت">−</button>
+          <div class="vol-mid"><div class="muted small">الصوت</div><div id="volValue">—</div></div>
+          <button class="round" data-vol="up" aria-label="رفع الصوت">+</button>
+          <button class="round" id="muteBtn" aria-label="كتم">🔇</button>
+        </div>
+        <div class="row3">
+          <button class="pill" data-key="REWIND">⏪</button>
+          <button class="pill" data-key="PLAY">▶︎</button>
+          <button class="pill" data-key="PAUSE">❚❚</button>
+          <button class="pill" data-key="FASTFORWARD">⏩</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-title">اكتب على التلفاز</div>
+        <div class="type-row">
+          <input id="typeInput" placeholder="ابحث في يوتيوب أو اكتب نصًا…">
+          <button class="primary small" id="typeSend">إرسال</button>
+        </div>
+        <p class="muted small">افتح خانة البحث في التطبيق أولًا، ثم اكتب هنا.</p>
+      </div>
+
+      <div class="card">
+        <div class="section-title">الطاقة</div>
+        <div class="row3">
+          <button class="pill" data-power="screenOff">إطفاء الشاشة</button>
+          <button class="pill" data-power="screenOn">تشغيل الشاشة</button>
+          <button class="pill danger" data-power="off">إطفاء التلفاز</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="tab" id="tab-quran" hidden>
+      <div class="seg" id="quranSeg">
+        <button data-seg="radio" class="sel">الإذاعات</button>
+        <button data-seg="mushaf">المصحف</button>
+        <button data-seg="live">البث المباشر</button>
+      </div>
+      <div class="card sleep">
+        <div class="section-title">مؤقت النوم</div>
+        <div class="chips" id="sleepChips"></div>
+        <label class="switch-row"><span>إطفاء التلفاز عند انتهاء المؤقت</span><input type="checkbox" id="powerOffToggle"></label>
+      </div>
+      <div id="seg-radio" class="list"></div>
+      <div id="seg-mushaf" hidden>
+        <div class="card">
+          <div class="section-title">القارئ</div>
+          <select id="reciterSelect"></select>
+          <button class="primary wide" id="continueKhatma">متابعة الختمة</button>
+          <label class="switch-row"><span>عرض الآيات على الشاشة</span><input type="checkbox" id="showAyat" checked></label>
+        </div>
+        <input id="surahSearch" class="search" placeholder="ابحث عن سورة…">
+        <div id="surahList" class="list"></div>
+      </div>
+      <div id="seg-live" hidden class="live-grid"></div>
+    </section>
+
+    <section class="tab" id="tab-apps" hidden>
+      <div class="apps" id="appsGrid"></div>
+    </section>
+
+    <section class="tab" id="tab-settings" hidden>
+      <div id="settingsBox"></div>
+    </section>
+
+    <nav class="tabs">
+      <button data-tab="home" class="sel"><span class="ti">◉</span>الريموت</button>
+      <button data-tab="quran"><span class="ti">۞</span>القرآن</button>
+      <button data-tab="apps"><span class="ti">▦</span>التطبيقات</button>
+      <button data-tab="settings"><span class="ti">⚙︎</span>الإعدادات</button>
+    </nav>
+    <div id="toast"></div>
+  </div>
+  <script src="app.js"></script>
+</body>
+</html>

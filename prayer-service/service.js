@@ -138,6 +138,37 @@ service.register('restore', function (m) {
   if (!callerOk(m)) { m.respond({returnValue: false, errorText: 'caller-not-authorized'}); return; }
   try { respond(m, {data: fs.readFileSync(backupFile, 'utf8')}); } catch (_) { m.respond({returnValue: false, errorText: 'no-backup'}); }
 });
+// ---- Xee Remote and Helper bridge: small files shared with Home Helper -------------------------------
+var HELPER_STATE = '/media/developer/apps/usr/palm/applications/com.local.nativehome/state';
+function writeShared(path, value, mode) {
+  if (!fs.existsSync(dir)) fs.mkdirSync(dir, {mode: 509});
+  fs.writeFileSync(path + '.tmp', JSON.stringify(value), {mode: mode || 420}); fs.renameSync(path + '.tmp', path);
+}
+service.register('remoteState', function (m) {
+  if (!callerOk(m)) { m.respond({returnValue: false, errorText: 'caller-not-authorized'}); return; }
+  try { var p = m.payload || {}; if (p.state) writeShared(dir + '/remote-state.json', p.state); if (p.catalog) writeShared(dir + '/remote-catalog.json', p.catalog); respond(m); }
+  catch (e) { m.respond({returnValue: false, errorText: String(e.code || e)}); }
+});
+service.register('remoteTake', function (m) {
+  if (!callerOk(m)) { m.respond({returnValue: false, errorText: 'caller-not-authorized'}); return; }
+  var list = [];
+  try { list = JSON.parse(fs.readFileSync(dir + '/remote-queue.json', 'utf8')); fs.unlinkSync(dir + '/remote-queue.json'); } catch (_) {}
+  m.respond({returnValue: true, commands: Array.isArray(list) ? list : []});
+});
+service.register('helperRequest', function (m) {
+  if (!callerOk(m)) { m.respond({returnValue: false, errorText: 'caller-not-authorized'}); return; }
+  var cmd = (m.payload || {}).cmd;
+  if (['update-check', 'update-install', 'remote-revoke'].indexOf(cmd) < 0) { m.respond({returnValue: false, errorText: 'unknown'}); return; }
+  try { fs.writeFileSync(HELPER_STATE + '/xee-request.json', JSON.stringify({id: String(Date.now()) + Math.random().toString(16).slice(2), cmd: cmd}), {mode: 432}); respond(m); }
+  catch (e) { m.respond({returnValue: false, errorText: String(e.code || e)}); }
+});
+service.register('helperStatus', function (m) {
+  if (!callerOk(m)) { m.respond({returnValue: false, errorText: 'caller-not-authorized'}); return; }
+  var update = null, paired = 0;
+  try { update = JSON.parse(fs.readFileSync(HELPER_STATE + '/update-status.json', 'utf8')); delete update.manifest; delete update.assets; } catch (_) {}
+  try { paired = JSON.parse(fs.readFileSync(HELPER_STATE + '/remote-tokens.json', 'utf8')).length; } catch (_) {}
+  m.respond({returnValue: true, update: update, paired: paired});
+});
 // Quran radio: turn the screen off while audio keeps playing, or turn the TV off when the sleep timer ends.
 service.register('power', function (m) {
   if (!callerOk(m)) { m.respond({returnValue: false, errorText: 'caller-not-authorized'}); return; }

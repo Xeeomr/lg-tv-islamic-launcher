@@ -90,7 +90,7 @@ function readHomeRequest(){
   else respond({returnValue:false,errorText:'Invalid Home request'});
  }catch(e){respond({returnValue:false,errorText:String(e)});}
 }
-function finish(code,signal){if(stopping)return;stopping=true;closePointer();clearTimeout(pointerRetry);if(screenWatch)screenWatch.close();clearInterval(timer);log({event:'worker-exit',code:code,signal:signal});if(policy.shouldBlock(code,signal))fs.writeFileSync(data+'/blocked','stopped',{mode:420});
+function finish(code,signal){if(stopping)return;stopping=true;try{if(remoteServer)remoteServer.close();if(updater)updater.close();}catch(e){}closePointer();clearTimeout(pointerRetry);if(screenWatch)screenWatch.close();clearInterval(timer);log({event:'worker-exit',code:code,signal:signal});if(policy.shouldBlock(code,signal))fs.writeFileSync(data+'/blocked','stopped',{mode:420});
  function end(){try{fs.unlinkSync(pidPath);}catch(e){}process.exit(code===22?0:(code||0));}
  // Let an already-issued custom-Home request settle before the final LG launch.
  var finishDeadline=monotonic()+3200;
@@ -121,9 +121,12 @@ function onWorkerExit(code,signal){
 // Developer Mode apps. When it is requested, press a key Home ignores (RED) through
 // the TV's remote-control socket, which cancels the request, and ask Home to show its own screensaver.
 var SSAP_PERMISSIONS=['LAUNCH','LAUNCH_WEBAPP','APP_TO_APP','CLOSE','TEST_OPEN','TEST_PROTECTED','CONTROL_AUDIO','CONTROL_DISPLAY','CONTROL_INPUT_JOYSTICK','CONTROL_INPUT_MEDIA_RECORDING','CONTROL_INPUT_MEDIA_PLAYBACK','CONTROL_INPUT_TV','CONTROL_POWER','CONTROL_TV_SCREEN','READ_APP_STATUS','READ_CURRENT_CHANNEL','READ_INPUT_DEVICE_LIST','READ_NETWORK_STATE','READ_RUNNING_APPS','READ_TV_CHANNEL_LIST','WRITE_NOTIFICATION_TOAST','READ_POWER_STATE','READ_COUNTRY_INFO','CONTROL_INPUT_TEXT','CONTROL_MOUSE_AND_KEYBOARD','READ_INSTALLED_APPS','READ_SETTINGS','READ_STORAGE_DEVICE_LIST'];
+// One persistent SSAP session serves remote keys (pointer socket) and requests from Helper and the phone remote.
 // A ready pointer socket answers within milliseconds; opening one takes over a second, longer than LG waits.
-var pointer=null,pointerSession=null,pointerRetry=null;
-function closePointer(){var p=pointer,ss=pointerSession;pointer=null;pointerSession=null;try{if(p)p.terminate();}catch(e){}try{if(ss)ss.terminate();}catch(e){}}
+var pointer=null,pointerSession=null,pointerRetry=null,ssapReady=false,ssapPending={},ssapSeq=0,ssapWaiters=[];
+function closePointer(){var p=pointer,ss=pointerSession;pointer=null;pointerSession=null;ssapReady=false;
+ Object.keys(ssapPending).forEach(function(id){var f=ssapPending[id];delete ssapPending[id];f({returnValue:false,errorText:'disconnected'});});
+ try{if(p)p.terminate();}catch(e){}try{if(ss)ss.terminate();}catch(e){}}
 function openPointer(){
  clearTimeout(pointerRetry);pointerRetry=null;
  if(pointerSession||stopping)return;
@@ -131,23 +134,37 @@ function openPointer(){
   var key=JSON.parse(fs.readFileSync(data+'/ssap-key.json','utf8')).key,WS=require('./websocket'),ifs=require('os').networkInterfaces(),host=null;
   Object.keys(ifs).forEach(function(n){ifs[n].forEach(function(a){if(!host&&!a.internal&&(a.family==='IPv4'||a.family===4)&&a.address.indexOf('169.254.')!==0)host=a.address;});});
   if(!host||!key)return;
-  var s=new WS('wss://'+host+':3001',{rejectUnauthorized:false,handshakeTimeout:3000,perMessageDeflate:false}),alive=true,pulse=null;
+  var s=new WS('wss://'+host+':3001',{rejectUnauthorized:false,handshakeTimeout:3000,perMessageDeflate:false,maxPayload:4194304}),alive=true,pulse=null;
   pointerSession=s;
   function lost(){if(pointerSession!==s)return;clearInterval(pulse);closePointer();if(!stopping)pointerRetry=setTimeout(openPointer,powerSleep?15000:5000);}
   s.on('open',function(){s.send(JSON.stringify({type:'register',id:'r',payload:{forcePairing:false,pairingType:'PROMPT','client-key':key,manifest:{manifestVersion:1,appVersion:'1.1',permissions:SSAP_PERMISSIONS}}}));});
   s.on('pong',function(){alive=true;});
   s.on('message',function(raw){
    var m;try{m=JSON.parse(String(raw));}catch(e){return;}
-   if(m.type==='registered')s.send(JSON.stringify({type:'request',id:'p',uri:'ssap://com.webos.service.networkinput/getPointerInputSocket',payload:{}}));
+   if(m.type==='registered'){
+    ssapReady=true;var w=ssapWaiters;ssapWaiters=[];w.forEach(function(f){f();});
+    s.send(JSON.stringify({type:'request',id:'p',uri:'ssap://com.webos.service.networkinput/getPointerInputSocket',payload:{}}));
+    pulse=setInterval(function(){if(!alive){lost();return;}alive=false;try{s.ping();}catch(e){lost();}},20000);
+   }
    else if(m.id==='p'&&m.payload&&m.payload.socketPath){
     var p=new WS(m.payload.socketPath,{rejectUnauthorized:false});
     p.on('open',function(){if(pointerSession===s)pointer=p;});p.on('error',lost);p.on('close',lost);
-    pulse=setInterval(function(){if(!alive){lost();return;}alive=false;try{s.ping();}catch(e){lost();}},20000);
    }
+   else if(m.id&&ssapPending[m.id]){var f=ssapPending[m.id];delete ssapPending[m.id];f(m.type==='error'?{returnValue:false,errorText:String(m.error)}:(m.payload||{}));}
    else if(m.type==='error'||(m.payload&&m.payload.pairingType)){log({event:'pointer-unavailable',error:String(m.error||'pairing')});lost();}
   });
   s.on('error',lost);s.on('close',lost);
  }catch(e){log({event:'ssap-button-error',error:String(e)});}
+}
+function ssapCall(uri,payload,cb,timeout){
+ var done=false,t=setTimeout(function(){finish({returnValue:false,errorText:'timeout'});},timeout||6000);
+ function finish(r){if(done)return;done=true;clearTimeout(t);if(cb)cb(r);}
+ function send(){
+  if(!pointerSession||!ssapReady){finish({returnValue:false,errorText:'not-connected'});return;}
+  var id='h'+(++ssapSeq);ssapPending[id]=finish;
+  try{pointerSession.send(JSON.stringify({type:'request',id:id,uri:uri,payload:payload||{}}));}catch(e){delete ssapPending[id];finish({returnValue:false,errorText:String(e)});}
+ }
+ if(ssapReady)send();else{openPointer();ssapWaiters.push(send);}
 }
 function ssapButton(name){
  if(pointer){try{pointer.send('type:button\nname:'+name+'\n\n');return;}catch(e){closePointer();}}
@@ -169,7 +186,15 @@ function start(){lastAck=monotonic();child=cp.spawn(root+'/relay',[],{stdio:['pi
  child.stdout.on('data',function(b){buffer+=b;var i;while((i=buffer.indexOf('\n'))>=0){var line=buffer.slice(0,i);buffer=buffer.slice(i+1);if(line==='P'){lastAck=monotonic();continue;}log({event:'worker',message:line});if(line==='BACK_DOWN'){cancelResume();screenPolicy.back(true,monotonic());}if(line==='BACK_UP')screenPolicy.back(false,monotonic());if(line==='HOME'){screenPolicy.clearBack();homeSequence++;lastHomeAt=monotonic();diagnostic('home');}if(line==='READY'){ready=true;lastAck=monotonic();child.stdin.write(homeControl.enabled()?'E':'D');}if(line==='LGHOME'&&!stopping)visitLG();if(line==='HOME'&&homeControl.enabled()&&!visitingLG&&!stopping&&!launching){suppressReturnUntil=0;launching=true;launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)child.stdin.end();});}}});
  child.stdin.on('error',function(){});
 }
-var timer=setInterval(function(){if(stopping)return;readHomeRequest();try{var raw=fs.readFileSync(data+'/control.json','utf8');if(raw!==lastCommand){lastCommand=raw;var command=JSON.parse(raw);diagnosticCommand(command.cmd,command.nonce);if(command.cmd==='startup-status')service.call('luna://com.local.nativehome.service/status',{},function(r){log({event:'startup-status',result:r.payload});});if(command.cmd==='stop'&&child)child.stdin.write('Q');if(command.cmd==='stall-worker'&&child)child.stdin.write('S');if(command.cmd==='stall-controller'){cp.spawn(root+'/resume',[String(process.pid)],{stdio:'ignore'});log({event:'simulate-controller-stall'});process.kill(process.pid,'SIGSTOP');}}}catch(e){}
+var lastXeeRequest='';
+function readXeeRequest(){
+ var r;try{r=JSON.parse(fs.readFileSync(data+'/xee-request.json','utf8'));}catch(e){return;}
+ if(!r||typeof r.id!=='string'||r.id===lastXeeRequest)return;lastXeeRequest=r.id;
+ if(r.cmd==='update-check'&&updater)updater.request('check');
+ if(r.cmd==='update-install'&&updater)updater.request('install');
+ if(r.cmd==='remote-revoke'){try{fs.writeFileSync(data+'/remote-tokens.json','[]',{mode:420});log({event:'remote-revoked'});}catch(e){}}
+}
+var timer=setInterval(function(){if(stopping)return;readHomeRequest();readXeeRequest();try{var raw=fs.readFileSync(data+'/control.json','utf8');if(raw!==lastCommand){lastCommand=raw;var command=JSON.parse(raw);diagnosticCommand(command.cmd,command.nonce);if(command.cmd==='startup-status')service.call('luna://com.local.nativehome.service/status',{},function(r){log({event:'startup-status',result:r.payload});});if(command.cmd==='stop'&&child)child.stdin.write('Q');if(command.cmd==='stall-worker'&&child)child.stdin.write('S');if(command.cmd==='stall-controller'){cp.spawn(root+'/resume',[String(process.pid)],{stdio:'ignore'});log({event:'simulate-controller-stall'});process.kill(process.pid,'SIGSTOP');}}}catch(e){}
  // Waking from standby: the key reader may still be restarting; launching Home does not need it.
  if(resumePendingUntil&&!launching&&!visitingLG&&homeControl.enabled()){
   var resumeDue=resumePendingUntil;resumePendingUntil=0;
@@ -181,7 +206,7 @@ var timer=setInterval(function(){if(stopping)return;readHomeRequest();try{var ra
  var now=monotonic();
  if(diagnosticUntil&&now>=diagnosticNext){diagnostic('sample');diagnosticNext=now+1000;}
  if(resumeGuardUntil&&now>=resumeGuardUntil)cancelResume();
- if(resumeGuardUntil&&resumeRetries<4&&!launching&&!visitingLG&&homeControl.enabled()&&
+ if(resumeGuardUntil&&resumeRetries<2&&!launching&&!visitingLG&&homeControl.enabled()&&
     lastForeground==='com.webos.app.home'&&lgHomeSince!==null&&now-lgHomeSince>=1500&&now-lastLaunchSettledAt>=5000){
   resumeRetries++;launching=true;log({event:'resume-retry',attempt:resumeRetries});
   launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'resume-retry-failed'});});
@@ -202,8 +227,24 @@ service.call('luna://com.local.nativehome.service/status',{},function(m){
  });
 });
 
-var powerPolicy=require('./power-policy')();
+var powerPolicy=require('./power-policy')(),lastPowerState='Active';
 setTimeout(openPointer,3000);
+function launchWith(id,params,done){service.call('luna://com.webos.applicationManager/launch',params?{id:id,params:params}:{id:id},function(m){if(done)done(!!(m.payload&&m.payload.returnValue===true));});}
+function lanAddress(){var ifs=require('os').networkInterfaces(),host=null;Object.keys(ifs).forEach(function(n){ifs[n].forEach(function(a){if(!host&&!a.internal&&(a.family==='IPv4'||a.family===4)&&a.address.indexOf('169.254.')!==0)host=a.address;});});return host;}
+// Home's service reads the pairing key from its own state, so release packages never carry it.
+function shareKey(){
+ var dest='/media/developer/apps/usr/palm/services/com.gathin.tvhome.prayer/state/ssap-key.json';
+ try{var key=fs.readFileSync(data+'/ssap-key.json','utf8');var cur=null;try{cur=fs.readFileSync(dest,'utf8');}catch(e){}
+  if(cur!==key){fs.writeFileSync(dest+'.tmp',key,{mode:420});fs.renameSync(dest+'.tmp',dest);log({event:'key-shared'});}}catch(e){if(e.code!=='ENOENT')log({event:'key-share-error',error:e.code||String(e)});}
+}
+(function keyLoop(){setTimeout(function(){shareKey();keyLoop();},60000);}());setTimeout(shareKey,2000);
+var xeeCtx={data:data,log:log,ssapCall:ssapCall,ssapButton:ssapButton,launchWith:launchWith,address:lanAddress,
+ foreground:function(){return lastForeground;},power:function(){return lastPowerState;},
+ noteRemoteLaunch:function(){suppressReturnUntil=monotonic()+8000;},
+ homeUpdated:function(){shareKey();}};
+var updater=null,remoteServer=null;
+try{updater=require('./updater')(xeeCtx);xeeCtx.updater=updater;}catch(e){log({event:'updater-error',error:String(e)});}
+try{remoteServer=require('./remote-server')(xeeCtx);}catch(e){log({event:'remote-server-error',error:String(e)});}
 var screenPolicy=require('./screen-policy')(),gapTimer=null;
 var screenWatch=require('./screen-watch')(data,screenLog,function(id){
  if(id==='com.webos.app.home'){if(lgHomeSince===null)lgHomeSince=monotonic();}
@@ -215,22 +256,30 @@ var screenWatch=require('./screen-watch')(data,screenLog,function(id){
   var now=monotonic();
   if(lastForeground!==''||!screenPolicy.gapFromApp(now)||!homeControl.enabled()||visitingLG||stopping||launching||!ready||
      powerSleep||now-powerChangedAt<8000||now<=suppressReturnUntil)return;
-  resumeGuardUntil=now+30000;resumeRetries=0;launching=true;log({event:'return-on-gap'});
-  launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'return-on-gap-failed'});});
- },350);
+  var closing=screenPolicy.previous();
+  // Another app may be starting (it can take seconds): the app that left the screen is then still running.
+  ssapCall('ssap://system.launcher/getAppState',{id:closing},function(r){
+   var t=monotonic();
+   if(r&&r.running===true){log({event:'gap-app-still-running',id:closing});return;}
+   if(lastForeground!==''||launching||visitingLG||stopping||!homeControl.enabled())return;
+   resumeGuardUntil=t+30000;resumeRetries=0;launching=true;log({event:'return-on-gap',id:closing,state:r&&r.returnValue===false?r.errorText:'closed'});
+   launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'return-on-gap-failed'});});
+  },600);
+ },250);
  if(exited&&homeControl.enabled()&&!visitingLG&&monotonic()>suppressReturnUntil&&ready&&!stopping&&!launching){
   resumeGuardUntil=monotonic()+30000;resumeRetries=0;
   launching=true;log({event:'return-after-exit'});
   launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'return-after-exit-failed'});});
  }
  // LG often takes the screen back ~1s after our launch. Answer at once instead of waiting for the slow retry.
- if(id==='com.webos.app.home'&&resumeGuardUntil&&resumeRetries<5&&!launching&&!visitingLG&&!stopping&&homeControl.enabled()&&
+ if(!exited&&id==='com.webos.app.home'&&resumeGuardUntil&&resumeRetries<5&&!launching&&!visitingLG&&!stopping&&homeControl.enabled()&&
     monotonic()>suppressReturnUntil&&monotonic()-lastLaunchSettledAt<20000){
   resumeRetries++;launching=true;log({event:'resume-retry-fast',attempt:resumeRetries});
   launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'resume-retry-fast-failed'});});
  }
 },function(){lastForeground=null;lastForegroundAt=null;monitor='reset';monitorReason=null;lgHomeSince=null;screenPolicy.reset();diagnostic('monitor-reset');},function(p){
  log({event:'power',state:p.state,processing:p.processing,onOff:p.onOff});
+ lastPowerState=p.state||lastPowerState;
  replaceLgSaver(p);
  var sleeping=p.onOff==='off'||p.state==='Suspend'||p.state==='Active Standby'||/Suspend|Power Off|Standby/.test(p.processing||'');
  if(sleeping!==powerSleep){powerSleep=sleeping;powerChangedAt=monotonic();if(!sleeping)lastAck=monotonic();}

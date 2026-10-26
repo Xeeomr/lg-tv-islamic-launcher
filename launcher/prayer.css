@@ -1,11 +1,11 @@
 /* Arabic home, adhan screen, screensaver, wallpapers and settings. Fonts: Thmanyah (optional, personal licence, not in the
    repository; add it with scripts/add-thmanyah.sh), Noto Sans Arabic and Amiri Quran (OFL). */
-@font-face { font-family: 'ThmanyahSans'; src: url('fonts/thmanyahsans-Light.woff2') format('woff2'); font-weight: 300; }
-@font-face { font-family: 'ThmanyahSans'; src: url('fonts/thmanyahsans-Regular.woff2') format('woff2'); font-weight: 400; }
-@font-face { font-family: 'ThmanyahSans'; src: url('fonts/thmanyahsans-Medium.woff2') format('woff2'); font-weight: 500; }
-@font-face { font-family: 'ThmanyahSans'; src: url('fonts/thmanyahsans-Bold.woff2') format('woff2'); font-weight: 700; }
-@font-face { font-family: 'ThmanyahSerif'; src: url('fonts/thmanyahseriftext-Regular.woff2') format('woff2'); font-weight: 400; }
-@font-face { font-family: 'ThmanyahSerif'; src: url('fonts/thmanyahseriftext-Medium.woff2') format('woff2'); font-weight: 500; }
+@font-face { font-family: 'ThmanyahSans'; src: url('fonts/thmanyahsans-Light.woff2') format('woff2'), url('http://127.0.0.1:8090/assets/fonts/thmanyahsans-Light.woff2') format('woff2'); font-weight: 300; }
+@font-face { font-family: 'ThmanyahSans'; src: url('fonts/thmanyahsans-Regular.woff2') format('woff2'), url('http://127.0.0.1:8090/assets/fonts/thmanyahsans-Regular.woff2') format('woff2'); font-weight: 400; }
+@font-face { font-family: 'ThmanyahSans'; src: url('fonts/thmanyahsans-Medium.woff2') format('woff2'), url('http://127.0.0.1:8090/assets/fonts/thmanyahsans-Medium.woff2') format('woff2'); font-weight: 500; }
+@font-face { font-family: 'ThmanyahSans'; src: url('fonts/thmanyahsans-Bold.woff2') format('woff2'), url('http://127.0.0.1:8090/assets/fonts/thmanyahsans-Bold.woff2') format('woff2'); font-weight: 700; }
+@font-face { font-family: 'ThmanyahSerif'; src: url('fonts/thmanyahseriftext-Regular.woff2') format('woff2'), url('http://127.0.0.1:8090/assets/fonts/thmanyahseriftext-Regular.woff2') format('woff2'); font-weight: 400; }
+@font-face { font-family: 'ThmanyahSerif'; src: url('fonts/thmanyahseriftext-Medium.woff2') format('woff2'), url('http://127.0.0.1:8090/assets/fonts/thmanyahseriftext-Medium.woff2') format('woff2'); font-weight: 500; }
 @font-face { font-family: 'NotoSansArabic'; src: url('fonts/NotoSansArabic.ttf') format('truetype'); font-weight: 100 900; }
 @font-face { font-family: 'AmiriQuran'; src: url('fonts/AmiriQuran.ttf') format('truetype'); }
 
@@ -190,7 +190,7 @@ html[lang="ar"] #renewalPanel, html[lang="ar"] .root-settings, html[lang="ar"] #
 .rd-head { position: absolute; top: 40px; right: 48px; left: 48px; }
 .rd-head h1 { font-size: 54px; font-weight: 500; }
 .rd-status { font-size: 26px; opacity: .65; margin-top: 6px; }
-.rd-grid { position: absolute; top: 170px; bottom: 40px; right: 40px; left: 560px; overflow: hidden; }
+.rd-grid { position: absolute; top: 250px; bottom: 40px; right: 40px; left: 560px; overflow: hidden; }
 .rd-station { float: right; width: 48%; margin: 0 1% 16px; padding: 18px 28px 18px 28px; border-radius: 20px; background: rgba(255,255,255,.06); transition: background 150ms ease; box-sizing: border-box; position: relative; }
 .rd-st-name { font-size: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rd-st-sub { font-size: 22px; opacity: .6; margin-top: 2px; }
@@ -198,9 +198,9 @@ html[lang="ar"] #renewalPanel, html[lang="ar"] .root-settings, html[lang="ar"] #
 .rd-station.playing .rd-st-sub:before { content: '● '; color: #3ddc97; }
 .rd-station.focused { background: #fff; color: #0b0d14; }
 .rd-station.focused .rd-st-sub:before { color: #138a5a; }
-.rd-side { position: absolute; top: 170px; bottom: 40px; left: 44px; width: 480px; }
-.rd-btn { padding: 18px 28px; margin-bottom: 12px; border-radius: 18px; font-size: 28px; background: rgba(255,255,255,.06); transition: background 150ms ease; }
-.rd-btn .rd-value { display: block; font-size: 24px; opacity: .7; margin-top: 2px; }
+.rd-side { position: absolute; top: 250px; bottom: 40px; left: 44px; width: 480px; }
+.rd-btn { padding: 13px 26px; margin-bottom: 9px; border-radius: 18px; font-size: 26px; background: rgba(255,255,255,.06); transition: background 150ms ease; }
+.rd-btn .rd-value { display: block; font-size: 22px; opacity: .7; margin-top: 2px; }
 .rd-btn.focused { background: #fff; color: #0b0d14; }
 .rd-note { font-size: 22px; opacity: .5; margin-top: 18px; line-height: 1.5; }
 #radioChip { position: absolute; top: 676px; right: 136px; display: none; align-items: center; padding: 10px 30px; border-radius: 30px; background: rgba(10,12,18,.72); font-size: 24px; direction: rtl; z-index: 150; white-space: nowrap; }
@@ -210,3 +210,60 @@ html[lang="ar"] #renewalPanel, html[lang="ar"] .root-settings, html[lang="ar"] #
 #radioChip .rc-sleep { margin-right: 18px; opacity: .7; }
 body.deep #radioChip { top: auto; bottom: 30px; }
 body.saver-on #radioChip { top: auto; bottom: 40px; z-index: 260; }
+
+/* Quran hub tabs, surah grid and live cards */
+.rd-tabs { position: absolute; top: 158px; right: 48px; left: 48px; height: 66px; direction: rtl; white-space: nowrap; }
+.rd-tab { display: inline-block; height: 62px; line-height: 62px; padding: 0 34px; margin-left: 14px; border-radius: 31px; font-size: 28px; background: rgba(255,255,255,.06); opacity: .7; }
+.rd-tab.sel { opacity: 1; background: rgba(217,180,106,.22); color: #f3dca6; }
+.rd-tab.focused { background: #fff; color: #0b0d14; opacity: 1; }
+.rd-grid.c3 .rd-station { width: 31.3%; padding: 14px 22px; }
+.rd-grid.c3 .rd-st-name { font-size: 27px; }
+.rd-live { float: right; width: 48%; height: 300px; margin: 0 1% 18px; border-radius: 24px; background-size: cover; background-position: center; position: relative; overflow: hidden; box-sizing: border-box; padding: 0 30px; box-shadow: inset 0 -160px 120px -40px rgba(0,0,0,.85); }
+.rd-live .rd-live-name { position: absolute; bottom: 58px; right: 30px; font-size: 40px; font-weight: 500; }
+.rd-live .rd-st-sub { position: absolute; bottom: 22px; right: 30px; font-size: 24px; }
+.rd-live.focused { box-shadow: inset 0 -160px 120px -40px rgba(0,0,0,.85), 0 0 0 6px #fff; }
+.rd-live.playing .rd-st-sub:before { content: '● '; color: #ff5a5a; }
+
+/* full-screen recitation view */
+#mushafView { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 240; direction: rtl; text-align: center; }
+#mushafView[hidden] { display: none; }
+.mv-shade { position: absolute; top: 0; right: 0; bottom: 0; left: 0; background: radial-gradient(ellipse at center, rgba(10,16,15,.97) 0%, rgba(3,4,8,.995) 75%); }
+.mv-top { position: absolute; top: 70px; right: 0; left: 0; }
+.mv-surah { font-family: 'AmiriQuran', 'ThmanyahSerif', serif; font-size: 64px; color: #d9b46a; }
+.mv-meta { font-size: 26px; opacity: .7; margin-top: 6px; }
+.mv-ayah { position: absolute; top: 290px; right: 160px; left: 160px; font-family: 'AmiriQuran', 'ThmanyahSerif', serif; font-size: 66px; line-height: 1.9; }
+.mv-ayah.f2 { font-size: 54px; } .mv-ayah.f3 { font-size: 44px; } .mv-ayah.f4 { font-size: 36px; line-height: 1.8; }
+.mv-next { position: absolute; bottom: 190px; right: 220px; left: 220px; font-family: 'AmiriQuran', serif; font-size: 30px; line-height: 1.7; opacity: .35; max-height: 110px; overflow: hidden; }
+.mv-foot { position: absolute; bottom: 60px; right: 160px; left: 160px; }
+.mv-bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.14); overflow: hidden; }
+.mv-fill { height: 100%; width: 0; background: #d9b46a; transition: width 600ms ease; }
+.mv-hint { font-size: 22px; opacity: .45; margin-top: 18px; }
+
+/* live broadcast */
+#liveView { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 245; background: #000; direction: rtl; }
+#liveView[hidden] { display: none; }
+#liveView video { width: 100%; height: 100%; }
+.lv-title { position: absolute; top: 50px; right: 70px; padding: 22px 36px; border-radius: 24px; background: rgba(0,0,0,.6); opacity: 0; transition: opacity 500ms ease; }
+.lv-title.shown { opacity: 1; }
+.lv-title b { display: block; font-size: 44px; font-weight: 500; }
+.lv-title span { display: block; font-size: 26px; opacity: .8; margin-top: 4px; }
+.lv-title i { display: block; font-style: normal; font-size: 22px; opacity: .55; margin-top: 10px; }
+.lv-state { position: absolute; bottom: 70px; left: 0; right: 0; text-align: center; font-size: 30px; opacity: .8; }
+
+/* night mode: calmer light after Isha */
+body.night #wallDim { opacity: 1 !important; }
+body.night:not(.scrolled):not(.deep) #prayerCard.in, body.night:not(.scrolled):not(.deep) #prayerHead.in { opacity: .82; }
+body.night .wall-layer { -webkit-filter: brightness(.7); filter: brightness(.7); }
+
+/* reminder card */
+#reminderBox { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 270; display: none; background: rgba(2,3,8,.55); direction: rtl; text-align: center; }
+#reminderBox.shown { display: flex; align-items: center; justify-content: center; }
+.rm-card { width: 900px; padding: 50px 60px 44px; border-radius: 36px; background: rgba(12,15,20,.96); border: 2px solid rgba(217,180,106,.35); }
+.rm-mark { width: 70px; height: 70px; margin: 0 auto 18px; border-radius: 35px; border: 4px solid #d9b46a; border-left-color: transparent; -webkit-transform: rotate(-30deg); transform: rotate(-30deg); }
+.rm-title { font-size: 52px; font-weight: 500; color: #f3dca6; }
+.rm-text { font-size: 32px; opacity: .85; margin-top: 14px; line-height: 1.5; }
+.rm-qr { margin: 26px auto 0; width: 330px; height: 330px; background: #fff; border-radius: 18px; padding: 14px; box-sizing: border-box; }
+.rm-qr svg { width: 100%; height: 100%; }
+.rm-btns { margin-top: 34px; }
+.rm-btn { display: inline-block; min-width: 220px; height: 74px; line-height: 74px; padding: 0 36px; margin: 0 10px; border-radius: 37px; font-size: 30px; background: rgba(255,255,255,.08); }
+.rm-btn.focused { background: #fff; color: #0b0d14; }

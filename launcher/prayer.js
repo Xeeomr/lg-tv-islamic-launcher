@@ -3,7 +3,7 @@
 (function () {
   'use strict';
   var STORE = 'tvhome.prayer.v1', BACKUP = 'tvhome.prayer.backup.v1', WEATHER = 'tvhome.weather.v1', FIRED = 'tvhome.prayer.fired.v1', RECENT = 'tvhome.content.recent.v1', VERSION = 6;
-  var SERVICE = 'luna://com.gathin.tvhome.prayer/', APP_VERSION = '2.0.0';
+  var SERVICE = 'luna://com.gathin.tvhome.prayer/', APP_VERSION = '2.1.0';
   var Calc = window.PrayerCalc;
   var ORDER = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
   var NAMES = {Fajr: 'الفجر', Sunrise: 'الشروق', Dhuhr: 'الظهر', Asr: 'العصر', Maghrib: 'المغرب', Isha: 'العشاء'};
@@ -24,7 +24,8 @@
     wallMode: 'time', wallFixed: 'nabawi', wallEvery: 20, showCredit: true, dim: 0.75, textScale: 100,
     saver: 3, saverWallMode: 'time', saverWall: 'nabawi',
     weather: true, unit: 'c',
-    hijriOffset: 0, showHijri: true
+    hijriOffset: 0, showHijri: true,
+    athkar: 'auto', morningAfter: 20, eveningAfter: 15, friday: true, fasting: true, monThu: false, nightMode: true, autoUpdate: true
   };
   var settings, days = [], weather = null, ramadan = null, cities = null, content = {index: null, hadith: null};
   var head, card, credit, overlay, saver, banner, panel, wallA, wallB, wallDim, wallFront = 0, wallShown = '';
@@ -46,6 +47,22 @@
     return out;
   }
   function wallById(id) { return WALLS.filter(function (x) { return x.id === id; })[0] || null; }
+  // Private recordings (not redistributable) live with Home Helper and are served to this TV only.
+  var PRIVATE = 'http://127.0.0.1:8090/assets/';
+  function voiceSrc(file) {
+    var v = VOICES.filter(function (x) { return x.file === file; })[0] || VOICES[0];
+    return v ? v.url || 'audio/' + v.file : '';
+  }
+  function loadPrivateVoices() {
+    getJSON(PRIVATE + 'audio/voices.json', function (j) {
+      if (!j || !j.names) return;
+      (j.order || Object.keys(j.names)).forEach(function (f) {
+        if (!/^[A-Za-z0-9._-]+\.(mp3|ogg|m4a)$/.test(f) || VOICES.some(function (v) { return v.file === f; })) return;
+        VOICES.push({file: f, name: j.names[f] || f, url: PRIVATE + 'audio/' + f});
+      });
+      XeeRemote.sentCatalog = false; XeeRemote.publish();
+    }, 5000);
+  }
   function voiceName(file) { var v = VOICES.filter(function (x) { return x.file === file; })[0]; return v ? v.name : 'غير متوفر'; }
   function loadSettings() {
     var s = read(STORE, {});
@@ -56,8 +73,7 @@
       if (s.wallpaper && s.wallpaper !== 'auto') { out.wallMode = s.wallpaper === 'none' ? 'none' : 'fixed'; if (wallById(s.wallpaper)) out.wallFixed = s.wallpaper; }
     }
     if (!out.city || typeof out.city.lat !== 'number') out.city = DEFAULTS.city;
-    if (!VOICES.some(function (v) { return v.file === out.voice; })) out.voice = VOICES.length ? VOICES[0].file : '';
-    if (out.fajrVoice !== 'same' && !VOICES.some(function (v) { return v.file === out.fajrVoice; })) out.fajrVoice = 'same';
+    // A voice missing here may be a private recording that Home Helper serves; it is resolved when played.
     if (!wallById(out.wallFixed)) out.wallFixed = WALLS.length ? WALLS[0].id : '';
     if (!wallById(out.saverWall)) out.saverWall = out.wallFixed;
     return out;
@@ -126,15 +142,21 @@
     for (var i = 0; i < list.length; i++) { if (list[i].ts <= now) prev = list[i]; else { next = list[i]; break; } }
     return {prev: prev, next: next};
   }
+  // Countdown card: Ramadan, then Eid al-Fitr, then Eid al-Adha; on the day itself a greeting.
+  var OCCASIONS = [{m: 9, d: 1, label: 'باقٍ على رمضان'}, {m: 10, d: 1, label: 'باقٍ على عيد الفطر'}, {m: 12, d: 10, label: 'باقٍ على عيد الأضحى'}];
   function computeRamadan() {
     var today = new Date(); today.setHours(12, 0, 0, 0);
     var h = hijriOf(today);
     if (!h) { ramadan = null; return; }
-    if (h.m === 9) { ramadan = {inside: true, day: h.d}; return; }
+    if (h.m === 10 && h.d <= 3) { ramadan = {today: 'عيد فطر مبارك', sub: 'تقبّل الله منا ومنكم صالح الأعمال'}; return; }
+    if (h.m === 12 && h.d === 9) { ramadan = {today: 'يوم عرفة', sub: 'خير الدعاء دعاء يوم عرفة'}; return; }
+    if (h.m === 12 && h.d >= 10 && h.d <= 13) { ramadan = {today: 'عيد أضحى مبارك', sub: 'تقبّل الله منا ومنكم'}; return; }
     for (var i = 1; i < 400; i++) {
       var d = new Date(today); d.setDate(today.getDate() + i);
-      var x = hijriOf(d);
-      if (x && x.m === 9 && x.d === 1) { ramadan = {inside: false, days: i, date: d}; return; }
+      var x = hijriOf(d), hit = x && OCCASIONS.filter(function (o) { return o.m === x.m && o.d === x.d; })[0];
+      if (!hit) continue;
+      if (h.m === 9) { ramadan = {inside: true, day: h.d, eid: i}; return; }
+      ramadan = {inside: false, days: i, date: d, label: hit.label}; return;
     }
     ramadan = null;
   }
@@ -349,9 +371,10 @@
     var label = byId('rLabel'), num = byId('rNum'), unit = byId('rUnit'), sub = byId('rSub');
     if (!label) return;
     if (!ramadan) { label.textContent = 'رمضان'; num.textContent = '—'; unit.textContent = ''; sub.textContent = ''; return; }
-    if (ramadan.inside) { label.textContent = 'رمضان مبارك'; num.textContent = ar(ramadan.day); unit.textContent = ' رمضان'; sub.textContent = 'تقبّل الله صيامكم وقيامكم'; return; }
+    if (ramadan.today) { label.textContent = 'اليوم'; num.textContent = ''; unit.textContent = ramadan.today; sub.textContent = ramadan.sub; return; }
+    if (ramadan.inside) { label.textContent = 'رمضان مبارك'; num.textContent = ar(ramadan.day); unit.textContent = ' رمضان'; sub.textContent = 'باقٍ على عيد الفطر ' + ar(ramadan.eid) + (ramadan.eid <= 10 ? ' أيام' : ' يومًا') + ' تقديريًا'; return; }
     var n = ramadan.days, t = ramadan.date;
-    label.textContent = 'باقٍ على رمضان'; num.textContent = ar(n);
+    label.textContent = ramadan.label; num.textContent = ar(n);
     unit.textContent = n === 1 ? ' يوم' : n === 2 ? ' يومان' : n <= 10 ? ' أيام' : ' يومًا';
     sub.textContent = 'يوافق ' + DAYS[t.getDay()] + ' ' + ar(t.getDate()) + ' ' + MONTHS[t.getMonth()] + ' تقديريًا حتى الإعلان الرسمي';
   }
@@ -408,7 +431,7 @@
     byId('aProg').style.width = '0';
     overlay.className = 'shown';
     rpc(SERVICE + 'adhanStart', {id: ev.id});
-    adhanAudio = new Audio('audio/' + voiceFor(ev));
+    adhanAudio = new Audio(voiceSrc(voiceFor(ev)));
     adhanAudio.volume = Math.max(0.1, Math.min(1, settings.appVolume / 100));
     adhanAudio.onended = function () { setTimeout(finishAdhan, 2000); };
     adhanAudio.onerror = function () { setTimeout(finishAdhan, 15000); };
@@ -433,7 +456,8 @@
       if (p && p.params) p = p.params;
       if (p && p.adhan && p.adhan.id) { p.adhan.test = p.adhan.id.indexOf('test-') === 0; startAdhan(p.adhan); }
       // Home Helper cancelled LG's own screensaver: show ours instead.
-      else if (p && p.saver && settings.saver && !adhanEvent && (!panel || panel.hidden)) startSaver();
+      else if (p && p.saver && settings.saver && !adhanEvent && (!panel || panel.hidden) && !(window.RadioUI && RadioUI.blocksSaver())) startSaver();
+      if (p && p.remote) XeeRemote.apply(p.remote);
     } catch (_) {}
   }
   function tick() {
@@ -455,7 +479,11 @@
         showBanner('اقترب موعد صلاة ' + e.name + ' — متبقٍ ' + fmtLeft(e.ts - now), 12000);
       }
     });
-    if (settings.saver && !saverOn && !adhanEvent && (!panel || panel.hidden) && !document.hidden && now - idleAt > settings.saver * 60000) startSaver();
+    if (settings.saver && !saverOn && !adhanEvent && (!panel || panel.hidden) && !document.hidden && now - idleAt > settings.saver * 60000 && !reminderOpen() &&
+        !(window.RadioUI && RadioUI.blocksSaver())) startSaver();
+    checkReminders(now);
+    if (Math.floor(now / 1000) % 30 === 0) { updateNight(now); if (!document.hidden || (window.RadioUI && RadioUI.playing())) XeeRemote.publish(); }
+    if (document.hidden && window.RadioUI && RadioUI.playing() && Math.floor(now / 1000) % 3 === 0) XeeRemote.take();
   }
   function scheduleTest(seconds) {
     clearInterval(testTimer);
@@ -567,7 +595,7 @@
   var testAudio = null;
   function playTest(file) {
     stopTest();
-    testAudio = new Audio('audio/' + file); testAudio.volume = Math.max(0.1, settings.appVolume / 100);
+    testAudio = new Audio(voiceSrc(file)); testAudio.volume = Math.max(0.1, settings.appVolume / 100);
     testAudio.onended = function () { testAudio = null; renderItems(); };
     var p = testAudio.play(); if (p && p.catch) p.catch(function () {});
   }
@@ -577,6 +605,7 @@
     var voiceFiles = VOICES.map(function (v) { return v.file; });
     return [
       {name: 'المظهر', items: [
+        toggle('وضع الليل بعد العشاء', function () { return settings.nightMode; }, function (v) { settings.nightMode = v; updateNight(Date.now()); }),
         choice('تعتيم الخلفية', [0.4, 0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9], function (v) { return ar(Math.round(v * 100)) + '٪'; }, function () { return settings.dim; }, function (v) { settings.dim = v; }, 'wall'),
         choice('حجم النصوص', [90, 100, 110], function (v) { return v === 90 ? 'صغير' : v === 100 ? 'عادي' : 'كبير'; }, function () { return settings.textScale; }, function (v) { settings.textScale = v; }),
         toggle('إظهار اسم المصوّر', function () { return settings.showCredit; }, function (v) { settings.showCredit = v; }, 'wall'),
@@ -635,6 +664,16 @@
           rpc(SERVICE + 'toast', {message: 'اقترب موعد صلاة المغرب — متبقٍ ١٠ دقائق', delay: 15000});
         })
       ]},
+      {name: 'الأذكار والتذكيرات', items: [
+        choice('أذكار الصباح والمساء', ['auto', 'remind', 'off'], function (v) { return {auto: 'تعمل تلقائيًا في وقتها', remind: 'تذكير فقط', off: 'متوقفة'}[v]; }, function () { return settings.athkar; }, function (v) { settings.athkar = v; }),
+        choice('أذكار الصباح بعد الفجر', [10, 20, 30, 45, 60], function (v) { return 'بعد ' + ar(v) + ' دقيقة'; }, function () { return settings.morningAfter; }, function (v) { settings.morningAfter = v; }),
+        choice('أذكار المساء بعد العصر', [0, 15, 30, 45, 60], function (v) { return v ? 'بعد ' + ar(v) + ' دقيقة' : 'مع الأذان'; }, function () { return settings.eveningAfter; }, function (v) { settings.eveningAfter = v; }),
+        toggle('تذكير يوم الجمعة وسورة الكهف', function () { return settings.friday; }, function (v) { settings.friday = v; }),
+        toggle('تذكير صيام عرفة وعاشوراء والأيام البيض', function () { return settings.fasting; }, function (v) { settings.fasting = v; }),
+        toggle('تذكير صيام الاثنين والخميس', function () { return settings.monThu; }, function (v) { settings.monThu = v; }),
+        info('اليوم', function () { var l = reminderEvents(Date.now()).map(function (r) { return r.title + ' ' + fmtClock(r.ts); }); return l.length ? l.join(' · ') : 'لا تذكيرات'; }),
+        action('تجربة تذكير', 'عرض الآن', function () { closePanel(); showReminder('يوم الجمعة', 'سنة قراءة سورة الكهف والإكثار من الصلاة على النبي ﷺ', 'استمع لسورة الكهف', function () { if (window.RadioUI) RadioUI.playMushaf(18, 1); }); })
+      ]},
       {name: 'القرآن والأحاديث', items: [
         choice('نوع المحتوى', ['mix', 'quran', 'hadith'], function (v) { return {mix: 'القرآن والأحاديث بالتناوب', quran: 'القرآن فقط', hadith: 'الأحاديث فقط'}[v]; }, function () { return settings.contentType; }, function (v) { settings.contentType = v; }, 'content'),
         info('القرآن الكريم', '١١٤ سورة · ٦٢٣٦ آية · الرسم العثماني (Tanzil)'),
@@ -670,6 +709,25 @@
         choice('رفع صوت التلفاز للأذان', [0, 10, 15, 20, 25, 30, 40], function (v) { return v ? 'إلى ' + ar(v) : 'بدون تغيير'; }, function () { return settings.volume; }, function (v) { settings.volume = v; }),
         info('بعد الأذان', 'يعود صوت التلفاز إلى مستواه السابق')
       ]},
+      {name: 'التحكم من الموبايل', items: [
+        info('العنوان', function () { return tvAddress ? 'http://' + tvAddress + ':8090' : 'جارٍ معرفة عنوان الشاشة…'; }),
+        action('رمز QR للفتح من الموبايل', 'عرض', function () { showQr(); }),
+        info('الربط', 'افتح العنوان من موبايل على نفس الشبكة، وسيظهر رمز من ٤ أرقام على الشاشة'),
+        info('الأجهزة المرتبطة', function () { return helperInfo ? ar(helperInfo.paired || 0) : '…'; }),
+        action('إلغاء ربط كل الأجهزة', 'إلغاء الربط', function () { rpc(SERVICE + 'helperRequest', {cmd: 'remote-revoke'}); showBanner('أُلغي ربط كل الأجهزة'); setTimeout(refreshHelper, 1500); })
+      ]},
+      {name: 'التحديثات', items: [
+        info('الإصدار الحالي', APP_VERSION),
+        toggle('التحديث التلقائي من GitHub', function () { return settings.autoUpdate; }, function (v) { settings.autoUpdate = v; XeeRemote.publish(); }),
+        info('الحالة', function () { return updateText(); }),
+        action('البحث عن تحديث', 'تحقق الآن', function () { rpc(SERVICE + 'helperRequest', {cmd: 'update-check'}); showBanner('جارٍ البحث عن تحديث…', 5000); setTimeout(refreshHelper, 8000); }),
+        action('تثبيت التحديث الآن', function () { var u = helperInfo && helperInfo.update; return u && u.available ? 'تثبيت ' + u.latest : 'لا يوجد'; }, function () {
+          var u = helperInfo && helperInfo.update;
+          if (!u || !u.available) return showBanner('لا يوجد تحديث متاح');
+          rpc(SERVICE + 'helperRequest', {cmd: 'update-install'}); showBanner('بدأ التحديث، ستُعاد تهيئة الواجهة خلال دقيقة', 10000);
+        }),
+        info('الأمان', 'التحديثات موقّعة رقميًا ولا تُثبّت إلا بعد التحقق منها')
+      ]},
       {name: 'النسخ الاحتياطي والاستعادة', items: [
         action('حفظ نسخة من الإعدادات', function () { var b = read(BACKUP, null); return b ? 'آخر نسخة ' + fmtClock(b.at) : 'لا توجد نسخة'; }, function () {
           var data = {at: Date.now(), settings: settings, layout: read('tvhome.layout', null)};
@@ -687,7 +745,7 @@
         info('ما يُحفظ', 'إعدادات الواجهة وترتيب التطبيقات فقط، وليس نسخة كاملة من التلفاز')
       ]},
       {name: 'معلومات المشروع', items: [
-        info('الإصدار', APP_VERSION + ' · مبني على Clean Your TV'),
+        info('الإصدار', 'Xee Launcher ' + APP_VERSION + ' · مبني على Clean Your TV'),
         info('المواقيت', 'حساب فلكي محلي دون إنترنت'),
         info('قاعدة المدن', ar(8099) + ' مدينة · GeoNames (CC BY 4.0)'),
         info('القرآن', 'نص Tanzil · خط Amiri Quran (OFL)'),
@@ -914,6 +972,7 @@
     sections = sectionItems(); view = 'main'; pane = 'cat'; secIndex = 0; itemIndex = 0;
     panel.className = 'prayer-panel'; panel.sheet.className = 'set-sheet'; panel.strip.hidden = true; panel.hidden = false;
     renderAll();
+    refreshHelper(); findAddress();
     rpc(SERVICE + 'status', {probe: true}, function (r) { serviceStatus = r && r.returnValue ? 'تعمل · ' + ar(r.events) + ' موعدًا مجدولًا' : 'غير متاحة'; serviceDiag = r ? JSON.stringify({p: r.probe, d: r.diag}) : 'no reply'; renderItems(); });
   }
   function closePanel() {
@@ -921,6 +980,181 @@
     if (view === 'wall') closePickerView(false);
     view = 'main'; if (panel) panel.hidden = true;
   }
+
+  // ---- reminders: athkar at their time, Friday, fasting days ------------------------------------
+  var REMIND = 'tvhome.reminders.v1', reminderBox = null, reminderFn = null, reminderFocus = 0, reminderTimer = 0;
+  function reminderEvents(now) {
+    var row = todayRow(); if (!row) return [];
+    var t = row.t, dow = new Date(now).getDay(), out = [], i = days.indexOf(row), tomorrow = days[i + 1];
+    if (settings.athkar !== 'off') {
+      out.push({id: row.d + '-sabah', ts: t.Fajr + settings.morningAfter * 60000, until: t.Sunrise + 3 * 3600000, kind: 'athkar', station: 'athkar_sabah', title: 'أذكار الصباح', text: 'حان وقت أذكار الصباح'});
+      out.push({id: row.d + '-masa', ts: t.Asr + settings.eveningAfter * 60000, until: t.Maghrib, kind: 'athkar', station: 'athkar_masa', title: 'أذكار المساء', text: 'حان وقت أذكار المساء'});
+    }
+    if (settings.friday && dow === 5) {
+      out.push({id: row.d + '-kahf', ts: Math.max(t.Sunrise + 3600000, t.Dhuhr - 3 * 3600000), until: t.Maghrib, title: 'يوم الجمعة', text: 'سنة قراءة سورة الكهف والإكثار من الصلاة على النبي ﷺ',
+        label: 'استمع لسورة الكهف', act: function () { if (window.RadioUI) RadioUI.playMushaf(18, 1); }});
+      out.push({id: row.d + '-ijaba', ts: t.Asr + 30 * 60000, until: t.Maghrib, title: 'آخر ساعة من يوم الجمعة', text: 'ساعة يُرجى فيها الإجابة، أكثر من الدعاء'});
+    }
+    if (settings.friday && dow === 4) out.push({id: row.d + '-jumuah-night', ts: t.Maghrib + 20 * 60000, until: t.Maghrib + 5 * 3600000, title: 'ليلة الجمعة', text: 'أكثر من الصلاة على النبي ﷺ'});
+    var h = tomorrow && tomorrow.h, msg = '';
+    if (settings.fasting && h) {
+      if (h.m === 12 && h.d === 9) msg = 'غدًا يوم عرفة، يُستحب صيامه لغير الحاج';
+      else if (h.m === 1 && h.d === 9) msg = 'غدًا تاسوعاء، يُستحب صيامه مع عاشوراء';
+      else if (h.m === 1 && h.d === 10) msg = 'غدًا يوم عاشوراء، يُستحب صيامه';
+      else if (h.d === 13 && h.m !== 9 && h.m !== 12) msg = 'غدًا أول الأيام البيض (١٣ و١٤ و١٥)، يُستحب صيامها';
+    }
+    if (!msg && settings.monThu && h && h.m !== 9 && !(h.m === 10 && h.d === 1) && !(h.m === 12 && h.d >= 10 && h.d <= 13)) {
+      var td = (dow + 1) % 7; if (td === 1 || td === 4) msg = 'غدًا ' + DAYS[td] + '، يُستحب صيامه';
+    }
+    if (msg) out.push({id: row.d + '-fast', ts: t.Maghrib + 45 * 60000, until: t.Maghrib + 5 * 3600000, title: 'تذكير بالصيام', text: msg});
+    return out;
+  }
+  function checkReminders(now) {
+    var k = Math.floor(now / 20000); if (k === checkReminders.k) return; checkReminders.k = k;
+    if (adhanEvent) return;
+    var done = read(REMIND, []);
+    reminderEvents(now).forEach(function (r) {
+      if (now < r.ts || now > r.until || done.indexOf(r.id) >= 0) return;
+      done.push(r.id); write(REMIND, done.slice(-60));
+      deliverReminder(r);
+    });
+  }
+  function deliverReminder(r) {
+    var visible = !document.hidden, radio = window.RadioUI;
+    if (r.kind === 'athkar') {
+      var listen = function () { if (radio) radio.play(r.station); };
+      // Auto mode plays on Home when nothing else is playing; otherwise it only reminds.
+      if (settings.athkar === 'auto' && visible && radio && !radio.playing()) { listen(); showBanner('بدأت ' + r.title + ' تلقائيًا', 8000); return; }
+      if (visible) return showReminder(r.title, r.text, 'استمع الآن', listen);
+      return rpc(SERVICE + 'toast', {message: r.text + ' · افتح Xee Launcher للاستماع'});
+    }
+    if (visible) showReminder(r.title, r.text, r.label, r.act);
+    else rpc(SERVICE + 'toast', {message: r.title + ' · ' + r.text});
+  }
+  function reminderOpen() { return !!reminderBox && reminderBox.className === 'shown'; }
+  function showReminder(title, text, label, fn) {
+    if ((panel && !panel.hidden) || (window.RadioUI && RadioUI.blocksSaver())) { showBanner(title + ' · ' + text, 12000); return; }
+    if (!reminderBox) { reminderBox = el('div'); reminderBox.id = 'reminderBox'; document.body.appendChild(reminderBox); }
+    reminderBox.innerHTML = '<div class="rm-card"><div class="rm-mark"></div><div class="rm-title"></div><div class="rm-text"></div><div class="rm-btns"></div></div>';
+    reminderBox.querySelector('.rm-title').textContent = title;
+    reminderBox.querySelector('.rm-text').textContent = text;
+    var btns = reminderBox.querySelector('.rm-btns');
+    if (label && fn) btns.appendChild(el('div', 'rm-btn', label));
+    btns.appendChild(el('div', 'rm-btn', label && fn ? 'لاحقًا' : 'حسنًا'));
+    reminderFn = label && fn ? fn : null; reminderFocus = 0; markReminder();
+    reminderBox.className = 'shown';
+    clearTimeout(reminderTimer); reminderTimer = setTimeout(closeReminder, 90000);
+  }
+  function markReminder() { Array.prototype.forEach.call(reminderBox.querySelectorAll('.rm-btn'), function (b, i) { b.className = 'rm-btn' + (i === reminderFocus ? ' focused' : ''); }); }
+  function closeReminder() { if (reminderBox) reminderBox.className = ''; clearTimeout(reminderTimer); }
+  function reminderKey(e) {
+    if (!reminderOpen()) return false;
+    var k = e.keyCode, n = reminderBox.querySelectorAll('.rm-btn').length;
+    if (k === 37 || k === 39) reminderFocus = (reminderFocus + 1) % n;
+    else if (k === 13) { var fn = reminderFocus === 0 ? reminderFn : null; closeReminder(); if (fn) fn(); return true; }
+    else if (k === 461 || k === 27) closeReminder();
+    else if (PASS_KEYS.indexOf(k) >= 0) return false;
+    markReminder(); return true;
+  }
+  function updateNight(now) {
+    var row = todayRow(), on = !!(settings.nightMode && row && (now >= row.t.Isha + 30 * 60000 || now < row.t.Fajr));
+    if (document.body.classList.contains('night') !== on) document.body.classList.toggle('night', on);
+  }
+
+  // ---- phone remote bridge and Helper status ---------------------------------------------------
+  var tvAddress = '', helperInfo = null;
+  function findAddress() {
+    rpc('luna://com.palm.connectionmanager/getStatus', {}, function (r) {
+      var a = r && ((r.wired && r.wired.state === 'connected' && r.wired.ipAddress) || (r.wifi && r.wifi.state === 'connected' && r.wifi.ipAddress));
+      if (a) { tvAddress = a; if (panel && !panel.hidden) renderItems(); }
+    });
+  }
+  function refreshHelper() { rpc(SERVICE + 'helperStatus', {}, function (r) { if (r && r.returnValue) { helperInfo = r; if (panel && !panel.hidden) renderItems(); } }); }
+  function updateText() {
+    var u = helperInfo && helperInfo.update;
+    if (!u) return 'لم يتم البحث بعد';
+    var st = {checking: 'جارٍ البحث…', downloading: 'جارٍ التنزيل…', installing: 'جارٍ التثبيت…', restarting: 'جارٍ إعادة التشغيل…'}[u.state];
+    if (st) return st;
+    if (u.error === 'connection') return 'تعذّر الاتصال · ' + (u.checkedAt ? fmtClock(u.checkedAt) : '');
+    if (u.error === 'bad-signature') return 'تم رفض تحديث غير موقّع';
+    if (u.error === 'no-release') return 'لا توجد إصدارات منشورة بعد';
+    if (u.error) return 'تعذّر التحديث، سيُعاد المحاولة';
+    return (u.available ? 'يتوفر الإصدار ' + u.latest : 'لديك أحدث إصدار') + (u.checkedAt ? ' · آخر فحص ' + fmtClock(u.checkedAt) : '');
+  }
+  function showQr() {
+    if (!tvAddress) { findAddress(); return showBanner('جارٍ معرفة عنوان الشاشة، حاول بعد لحظات'); }
+    var url = 'http://' + tvAddress + ':8090', qr = window.qrcode && window.qrcode(0, 'M');
+    if (!qr) return showBanner(url, 20000);
+    qr.addData(url); qr.make();
+    closePanel();
+    showReminder('افتح التحكم من الموبايل', url, null, null);
+    var box = el('div', 'rm-qr'); box.innerHTML = qr.createSvgTag(9, 2);
+    reminderBox.querySelector('.rm-card').insertBefore(box, reminderBox.querySelector('.rm-btns'));
+  }
+  var REMOTE_KEYS = ['dim', 'textScale', 'wallMode', 'wallFixed', 'wallEvery', 'showCredit', 'saver', 'saverWallMode', 'saverWall', 'weather', 'unit',
+    'hijriOffset', 'showHijri', 'autoMethod', 'method', 'asr', 'alert', 'fullScreen', 'voice', 'fajrVoice', 'appVolume', 'volume', 'returnPrev', 'resume',
+    'preEnabled', 'prealert', 'contentType', 'athkar', 'morningAfter', 'eveningAfter', 'friday', 'fasting', 'monThu', 'nightMode', 'autoUpdate', 'perPrayer', 'offsets'];
+  var XeeRemote = {
+    snapshot: function () {
+      var now = Date.now(), row = todayRow(), nb = neighbours(now), out = {};
+      REMOTE_KEYS.forEach(function (k) { out[k] = settings[k]; });
+      return {at: now, version: APP_VERSION, city: settings.city, settings: out,
+        today: row ? ['Fajr', 'Sunrise', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map(function (k) { return {key: k, name: NAMES[k], ts: row.t[k]}; }) : [],
+        next: nb.next ? {name: nb.next.name, ts: nb.next.ts} : null, hijri: row && settings.showHijri ? hijriText(row.h) : '',
+        occasion: ramadan, weather: weather ? {t: weather.t, text: weatherText(weather.c), max: weather.max, min: weather.min} : null,
+        radio: window.RadioUI ? RadioUI.snapshot() : null, adhan: !!adhanEvent, visible: !document.hidden};
+    },
+    catalog: function () {
+      return {voices: VOICES.map(function (v) { return {file: v.file, name: v.name}; }), walls: WALLS.map(function (w) { return {id: w.id, name: w.name, p: w.p}; }),
+        methods: Object.keys(Calc.METHODS).map(function (id) { return {id: +id, name: Calc.METHODS[id].name}; }), quran: window.RadioUI ? RadioUI.catalog() : null};
+    },
+    publish: function () {
+      var now = Date.now();
+      if (now - (XeeRemote.at || 0) < 1500) { clearTimeout(XeeRemote.t); XeeRemote.t = setTimeout(XeeRemote.publish, 1600); return; }
+      XeeRemote.at = now;
+      var payload = {state: XeeRemote.snapshot()};
+      if (!XeeRemote.sentCatalog && window.RadioUI && RadioUI.catalog().surahs.length) { payload.catalog = XeeRemote.catalog(); XeeRemote.sentCatalog = true; }
+      rpc(SERVICE + 'remoteState', payload);
+    },
+    take: function () { rpc(SERVICE + 'remoteTake', {}, function (r) { (r && r.commands || []).forEach(XeeRemote.apply); }); },
+    apply: function (c) {
+      if (!c || typeof c.type !== 'string') return;
+      var seen = XeeRemote.seen = XeeRemote.seen || [];
+      if (c.id) { if (seen.indexOf(c.id) >= 0) return; seen.push(c.id); if (seen.length > 50) seen.shift(); }
+      var R = window.RadioUI;
+      idleAt = Date.now(); stopSaver();
+      switch (c.type) {
+        case 'radio.play': if (R) R.play(c.id); break;
+        case 'radio.stop': if (R) R.stop(); break;
+        case 'radio.sleep': if (R) R.setSleep(c.minutes); break;
+        case 'radio.powerOff': if (R) R.setPowerOff(c.value); break;
+        case 'mushaf.play': if (R) R.playMushaf(c.s, c.a, c.reciter, c.quiet); break;
+        case 'mushaf.continue': if (R) R.playMushaf(0, 0, c.reciter, c.quiet); break;
+        case 'mushaf.pause': if (R) R.togglePause(); break;
+        case 'mushaf.next': if (R) R.next(); break;
+        case 'mushaf.prev': if (R) R.prev(); break;
+        case 'mushaf.reciter': if (R) R.setReciter(c.id); break;
+        case 'live.open': if (R) R.openLive(c.id); break;
+        case 'open.quran': if (R) R.open(c.tab); break;
+        case 'open.settings': openPanel(); break;
+        case 'open.qr': findAddress(); setTimeout(showQr, tvAddress ? 0 : 1500); break;
+        case 'adhan.test': startAdhan({id: 'test-' + Date.now(), test: true, name: 'العصر', key: 'Asr', ts: Date.now()}); break;
+        case 'reminder.test': showReminder('تجربة من الموبايل', 'تم الاتصال بـ Xee Launcher بنجاح', null, null); break;
+        case 'city': if (Array.isArray(c.row) && c.row.length >= 6) loadCities(function () { if (!cities) return; setCity(c.row); showBanner('المدينة الآن: ' + settings.city.name); XeeRemote.publish(); }); break;
+        case 'setting':
+          if (REMOTE_KEYS.indexOf(c.key) < 0) break;
+          var cur = settings[c.key], v = c.value;
+          if (cur && typeof cur === 'object') { if (!v || typeof v !== 'object') break; v = merge(cur, v); }
+          else if (typeof v !== typeof cur) break;
+          settings[c.key] = v;
+          changed(/^(method|autoMethod|asr|offsets|hijriOffset)$/.test(c.key) ? 'times' : /^(dim|wall)/.test(c.key) ? 'wall' : /^(weather|unit)$/.test(c.key) ? 'weather' : c.key === 'contentType' ? 'content' : '');
+          if (c.key === 'nightMode') updateNight(Date.now());
+          break;
+      }
+      XeeRemote.publish();
+    }
+  };
+  window.XeeRemote = XeeRemote;
 
   // ---- start ------------------------------------------------------------------------------------------------
   function init() {
@@ -941,10 +1175,12 @@
       loadLocal('hadith.json', function (j) { content.hadith = j; });
     }, 300);
     setInterval(tick, 1000);
+    setTimeout(function () { updateNight(Date.now()); XeeRemote.take(); XeeRemote.publish(); findAddress(); refreshHelper(); loadPrivateVoices(); }, 4000);
     setInterval(function () { loadWeather(false); }, 20 * 60000);
     setInterval(function () { if (!document.hidden && !saverOn) refreshHomeContent(true); }, 10 * 60000);
     document.addEventListener('keydown', function (e) {
       idleAt = Date.now();
+      if (!adhanEvent && reminderKey(e)) { e.preventDefault(); e.stopImmediatePropagation(); return; }
       if (adhanEvent) {
         if (PASS_KEYS.indexOf(e.keyCode) >= 0) return;
         e.preventDefault(); e.stopImmediatePropagation();
@@ -964,7 +1200,7 @@
     // EXIT closes our window: stop the adhan and go back. Coming back to Home shows a fresh verse.
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) { if (adhanEvent) finishAdhan(); }
-      else { idleAt = Date.now(); ensureData(); render(); if (content.index && !adhanEvent) refreshHomeContent(true); setWall(currentWall()); }
+      else { idleAt = Date.now(); ensureData(); render(); XeeRemote.take(); XeeRemote.publish(); if (content.index && !adhanEvent) refreshHomeContent(true); setWall(currentWall()); }
     });
     try { var raw = window.PalmSystem && window.PalmSystem.launchParams; if (raw) launchEvent(raw); } catch (_) {}
     window.PrayerUI = {open: openPanel, startAdhan: startAdhan};

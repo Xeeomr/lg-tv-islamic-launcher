@@ -9,6 +9,7 @@ module.exports=function(){
  return {
   reset:function(){previous=null;gapSince=null;clearBack();},
   clearBack:clearBack,
+  previous:function(){return previous;},
   // An app just closed (nothing in front yet) and LG Home is about to be raised: answer before it appears.
   gapFromApp:function(now){
    return gapSince!==null&&returnsHome(previous)&&!(backSince!==null&&now-backSince>=700)&&!(backUntil>0&&now<=backUntil);
