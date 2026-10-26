@@ -53,7 +53,7 @@ module.exports = function (ctx) {
     get('https://api.github.com/repos/' + REPO + '/releases/latest', false, function (err, buf) {
       var rel; try { rel = !err && JSON.parse(buf.toString('utf8')); } catch (e) { rel = null; }
       var asset = rel && (rel.assets || []).filter(function (a) { return a.name === 'update.json'; })[0];
-      if (!asset) { busy = false; save({state: 'idle', checkedAt: Date.now(), error: err ? 'connection' : 'no-release'}); return done && done(); }
+      if (!asset) { busy = false; save({state: 'idle', checkedAt: Date.now(), error: err && !/http-404/.test(err.message) ? 'connection' : 'no-release'}); return done && done(); }
       get(asset.browser_download_url, true, function (err2, mbuf) {
         var m; try { m = !err2 && JSON.parse(mbuf.toString('utf8')); } catch (e) { m = null; }
         if (!verify(m)) { busy = false; save({state: 'idle', checkedAt: Date.now(), error: 'bad-signature'}); log({event: 'update-bad-signature'}); return done && done(); }

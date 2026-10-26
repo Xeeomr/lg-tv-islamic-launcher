@@ -1120,7 +1120,7 @@
     apply: function (c) {
       if (!c || typeof c.type !== 'string') return;
       var seen = XeeRemote.seen = XeeRemote.seen || [];
-      if (c.id) { if (seen.indexOf(c.id) >= 0) return; seen.push(c.id); if (seen.length > 50) seen.shift(); }
+      if (c.rid) { if (seen.indexOf(c.rid) >= 0) return; seen.push(c.rid); if (seen.length > 50) seen.shift(); }
       var R = window.RadioUI;
       idleAt = Date.now(); stopSaver();
       switch (c.type) {

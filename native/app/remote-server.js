@@ -58,7 +58,8 @@ module.exports = function (ctx) {
   }
   var FRONT = /^(radio\.play|mushaf\.play|mushaf\.continue|live\.open|open\.|adhan\.test)/;
   function homeCommand(cmd, done) {
-    cmd.id = crypto.randomBytes(6).toString('hex'); cmd.at = Date.now();
+    // A request id for de-duplication; commands keep their own fields (a station id, for example).
+    cmd.rid = crypto.randomBytes(6).toString('hex'); cmd.at = Date.now();
     // Home in front gets the command at once through a relaunch; audio and screens bring Home forward.
     if (ctx.foreground() === HOME || FRONT.test(cmd.type)) ctx.launchWith(HOME, {remote: cmd}, function (ok) { done({returnValue: ok, delivered: true}); });
     else { try { queue(cmd); done({returnValue: true, queued: true}); } catch (e) { done({returnValue: false, errorText: 'queue-unavailable'}); } }
