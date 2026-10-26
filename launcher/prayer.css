@@ -179,3 +179,31 @@ body.scrolled #prayerCard, body.scrolled #prayerHead, body.scrolled #wallCredit,
 /* Arabic text in the launcher's own panels */
 html[lang="ar"] #renewalPanel, html[lang="ar"] .root-settings, html[lang="ar"] #homeConfirmation, html[lang="ar"] #languagePicker, html[lang="ar"] #appPicker, html[lang="ar"] #toast, html[lang="ar"] .undo-bar { direction: rtl; font-family: 'ThmanyahSans', 'NotoSansArabic', sans-serif; }
 
+
+/* ---- Quran radio ----------------------------------------------------------------------------------- */
+.radio-panel { position: absolute; top: 0; right: 0; bottom: 0; left: 0; z-index: 200; background: rgba(2,3,8,.55); direction: rtl; }
+.radio-panel[hidden] { display: none; }
+.rd-sheet { position: absolute; top: 60px; bottom: 60px; right: 110px; left: 110px; border-radius: 34px; background: rgba(10,12,18,.94); }
+.rd-head { position: absolute; top: 40px; right: 48px; left: 48px; }
+.rd-head h1 { font-size: 54px; font-weight: 500; }
+.rd-status { font-size: 26px; opacity: .65; margin-top: 6px; }
+.rd-grid { position: absolute; top: 170px; bottom: 40px; right: 40px; left: 560px; overflow: hidden; }
+.rd-station { float: right; width: 48%; margin: 0 1% 16px; padding: 18px 28px 18px 28px; border-radius: 20px; background: rgba(255,255,255,.06); transition: background 150ms ease; box-sizing: border-box; position: relative; }
+.rd-st-name { font-size: 30px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rd-st-sub { font-size: 22px; opacity: .6; margin-top: 2px; }
+.rd-station.playing { background: rgba(46,160,110,.28); }
+.rd-station.playing .rd-st-sub:before { content: '● '; color: #3ddc97; }
+.rd-station.focused { background: #fff; color: #0b0d14; }
+.rd-station.focused .rd-st-sub:before { color: #138a5a; }
+.rd-side { position: absolute; top: 170px; bottom: 40px; left: 44px; width: 480px; }
+.rd-btn { padding: 18px 28px; margin-bottom: 12px; border-radius: 18px; font-size: 28px; background: rgba(255,255,255,.06); transition: background 150ms ease; }
+.rd-btn .rd-value { display: block; font-size: 24px; opacity: .7; margin-top: 2px; }
+.rd-btn.focused { background: #fff; color: #0b0d14; }
+.rd-note { font-size: 22px; opacity: .5; margin-top: 18px; line-height: 1.5; }
+#radioChip { position: absolute; top: 676px; right: 136px; display: none; align-items: center; padding: 10px 30px; border-radius: 30px; background: rgba(10,12,18,.72); font-size: 24px; direction: rtl; z-index: 150; white-space: nowrap; }
+#radioChip.shown { display: flex; }
+#radioChip .rc-dot { width: 14px; height: 14px; border-radius: 7px; background: #e0a83a; margin-left: 14px; }
+#radioChip .rc-dot.live { background: #3ddc97; }
+#radioChip .rc-sleep { margin-right: 18px; opacity: .7; }
+body.deep #radioChip { top: auto; bottom: 30px; }
+body.saver-on #radioChip { top: auto; bottom: 40px; z-index: 260; }

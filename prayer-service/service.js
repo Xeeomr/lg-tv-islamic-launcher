@@ -138,6 +138,18 @@ service.register('restore', function (m) {
   if (!callerOk(m)) { m.respond({returnValue: false, errorText: 'caller-not-authorized'}); return; }
   try { respond(m, {data: fs.readFileSync(backupFile, 'utf8')}); } catch (_) { m.respond({returnValue: false, errorText: 'no-backup'}); }
 });
+// Quran radio: turn the screen off while audio keeps playing, or turn the TV off when the sleep timer ends.
+service.register('power', function (m) {
+  if (!callerOk(m)) { m.respond({returnValue: false, errorText: 'caller-not-authorized'}); return; }
+  var off = (m.payload || {}).action === 'off';
+  var uri = off ? 'system/turnOff' : 'com.webos.service.tvpower/power/turnOffScreen';
+  ssap([{uri: 'ssap://' + uri, payload: off ? {} : {standbyMode: 'active'}}]).then(function (r) {
+    if (r[0] && r[0].returnValue === false) throw new Error(r[0].errorText || 'denied');
+    return r[0];
+  }).catch(function () { return call('luna://' + uri.replace('system/turnOff', 'com.webos.service.tvpower/power/turnOff'), off ? {reason: 'unknown'} : {standbyMode: 'active'}); }).then(function (r) {
+    respond(m, {result: r});
+  });
+});
 service.register('adhanStart', function (m) {
   if (!callerOk(m)) { m.respond({returnValue: false, errorText: 'caller-not-authorized'}); return; }
   raiseVolume((m.payload || {}).id || 'local').then(function () { respond(m); });

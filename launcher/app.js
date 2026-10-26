@@ -33,7 +33,7 @@
     ambientLayers = [getElement("ambientA"), getElement("ambientB")],
     ambientIndex = 0,
     ambientColor = null,
-    topButtons = [getElement("btnPrayer"), getElement("btnInputs"), getElement("btnWifi"), getElement("btnSettings")],
+    topButtons = [getElement("btnPrayer"), getElement("btnRadio"), getElement("btnInputs"), getElement("btnWifi"), getElement("btnSettings")],
     inputsPanel = getElement("inputsPanel"),
     tiles = [],
     focusZone = "grid",
@@ -879,8 +879,9 @@
     }
   }
   function activateTopButton(index) {
-    // Visual order: prayer, inputs, Wi-Fi, settings.
-    index = [3, 0, 1, 2][index];
+    // Visual order: prayer, radio, inputs, Wi-Fi, settings.
+    index = [3, 4, 0, 1, 2][index];
+    if (4 === index) return void (window.RadioUI && window.RadioUI.open());
     0 === index ? function () {
       if (inputsPanel.innerHTML = "", inputRows = [], (window.TV_APPS && TV_APPS.inputs || []).forEach(function (e) {
         addInputRow("M18,7V4c0,-1.1 -0.9,-2 -2,-2H8C6.9,2 6,2.9 6,4v3H5v6l3,6v3h8v-3l3,-6V7H18zM8,4h8v3h-2V5h-1v2h-2V5h-1v2H8V4z", e.label, e.appId);

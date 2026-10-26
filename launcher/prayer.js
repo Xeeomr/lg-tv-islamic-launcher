@@ -379,6 +379,7 @@
     if (!ev.test && (settings.alert === 'notify' || !settings.fullScreen)) { showBanner('حان الآن موعد صلاة ' + ev.name); return; }
     stopSaver();
     if (panel && !panel.hidden) closePanel();
+    if (window.RadioUI) RadioUI.pauseForAdhan();
     adhanEvent = ev;
     if (!overlay) {
       overlay = el('div'); overlay.id = 'adhanOverlay';
@@ -407,6 +408,7 @@
     var ev = adhanEvent; adhanEvent = null;
     if (adhanAudio) { try { adhanAudio.pause(); } catch (_) {} adhanAudio = null; }
     overlay.className = '';
+    if (window.RadioUI) RadioUI.resumeAfterAdhan();
     var back = settings.returnPrev ? ev.returnTo || '' : '';
     rpc(SERVICE + 'adhanDone', {id: ev.id, returnTo: back, resume: settings.resume}, function (r) {
       if ((!r || r.returnValue !== true) && back && back !== 'com.gathin.tvhome') rpc('luna://com.webos.applicationManager/launch', {id: back});
@@ -495,7 +497,7 @@
   }
   function startSaver(preview) {
     if (!saver) buildSaver();
-    saverOn = true; saver.className = 'shown' + (preview ? ' preview' : '');
+    saverOn = true; saver.className = 'shown' + (preview ? ' preview' : ''); document.body.classList.add('saver-on');
     saverStep = Math.floor(Math.random() * 20);
     updateSaver(); saverCycle(true);
     clearInterval(saverTimer);
@@ -503,7 +505,7 @@
   }
   function stopSaver() {
     if (!saver || !saverOn) return;
-    clearInterval(saverTimer); saverOn = false; saver.className = '';
+    clearInterval(saverTimer); saverOn = false; saver.className = ''; document.body.classList.remove('saver-on');
     byId('svA').style.backgroundImage = byId('svB').style.backgroundImage = 'none';
   }
 
@@ -708,7 +710,7 @@
     catBox.textContent = '';
     sections.forEach(function (s, i) {
       var r = el('div', 'set-cat' + (i === secIndex ? ' sel' : '') + (pane === 'cat' && i === secIndex ? ' focused' : ''), s.name);
-      r.onclick = function () { secIndex = i; itemIndex = 0; pane = 'item'; renderAll(); };
+      r.onclick = function () { if (!viaPointer()) return; secIndex = i; itemIndex = 0; pane = 'item'; renderAll(); };
       catBox.appendChild(r);
     });
     scrollInto(catBox, catBox.children[secIndex]);
@@ -721,7 +723,7 @@
       var r = el('div', 'set-item' + (it.info ? ' info' : '') + (pane === 'item' && i === itemIndex ? ' focused' : ''));
       r.appendChild(el('span', 'set-label', it.label));
       var v = el('span', 'set-value', it.value()); if (it.step) { v.className += ' cyc'; } r.appendChild(v);
-      r.onclick = function () { pane = 'item'; itemIndex = i; activateItem(); };
+      r.onclick = function () { if (!viaPointer()) return; pane = 'item'; itemIndex = i; activateItem(); };
       itemBox.appendChild(r);
     });
     scrollInto(itemBox, itemBox.children[itemIndex]);
@@ -749,7 +751,7 @@
       var t = el('div', 'p-tile'), img = el('div', 'p-tile-img'), w = wallById(id);
       img.style.backgroundImage = 'url(wallpapers/thumbs/' + id + '.jpg)';
       t.appendChild(img); t.appendChild(el('div', 'p-tile-tag', PERIODS[w.p]));
-      t.onclick = function () { picker.focus = i; closePickerView(true); };
+      t.onclick = function () { if (!viaPointer()) return; picker.focus = i; closePickerView(true); };
       panel.track.appendChild(t); picker.tiles.push(t);
     });
     focusPicker(picker.focus, true);
@@ -821,7 +823,7 @@
     var list = el('div', 'set-list'); list.id = 'setList';
     listState.rows.forEach(function (x, i) {
       var r = el('div', 'set-item'); r.appendChild(el('span', 'set-label', x.label)); r.appendChild(el('span', 'set-value', x.sub || ''));
-      r.onclick = function () { listState.index = i; chooseList(); };
+      r.onclick = function () { if (!viaPointer()) return; listState.index = i; chooseList(); };
       list.appendChild(r);
     });
     if (!listState.rows.length) list.appendChild(el('div', 'set-empty', 'لا توجد نتائج'));
@@ -847,7 +849,11 @@
     view = 'main'; renderAll();
   }
   var NAV = [13, 27, 37, 38, 39, 40, 461];
+  // The OK key also produces a click wherever the hidden pointer rests; only real pointer clicks count.
+  var okAt = 0;
+  function viaPointer() { return Date.now() - okAt > 800; }
   function onKey(e) {
+    if (e.keyCode === 13) okAt = Date.now();
     if (!panel || panel.hidden) return;
     var k = e.keyCode;
     if (view === 'list') {

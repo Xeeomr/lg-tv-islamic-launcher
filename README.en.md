@@ -54,6 +54,13 @@ Built on [Clean Your TV](https://github.com/Razdva122/clean-your-tv-lg-webos) (M
 - A screensaver after the idle time you choose: slowly moving photo, clock, Hijri date, a verse and the next prayer; the text drifts slightly to protect the panel.
 - 20 high-quality Islamic wallpapers under open licences, grouped for Fajr, day, Maghrib and night, changing with the prayer times, with photographer credits, an adjustable dark overlay and a live-preview picker.
 
+**Quran radio**
+- Live Radio Quran Cairo and Saudi Quran Radio, plus mp3quran.net reciter radios (Al-Husary, Abdul Basit, Al-Minshawi, Mustafa Ismail, Al-Tablawi, Alafasy, Al-Muaiqly, Al-Sudais, Al-Shuraim), tafsir, ruqyah, and morning and evening adhkar.
+- Built for listening all night: automatic reconnect with a backup stream when the connection drops, and playback carries on if the system restarts Home.
+- Sleep timer (15 minutes to 4 hours) with an option to turn the TV off when it ends.
+- "Screen off, sound on"; any remote key turns the screen back on.
+- The radio pauses for the adhan and resumes afterwards; the station name shows on Home and the screensaver.
+
 **Speed and stability**
 - Home opens the new interface, and leaving any app brings you back to it.
 - After turning the TV off and on (standby) the new interface appears directly.
@@ -95,6 +102,7 @@ Three openly licensed recordings are included. To add the Makkah or Madinah adha
 
 ## Usage
 - **Settings**: the crescent button at the top left. 18 sections: sections on the right, options on the left. ↑↓ to move, ← or OK to enter and change values, Back to leave. Changes save automatically.
+- **Radio**: the Radio button at the top. Stations on the right; stop, sleep timer and screen off on the left.
 - **Apps**: long-press OK on any app; add apps from the "+" tile at the end of the list.
 - **LG's original home**: press Home three times quickly.
 
@@ -134,3 +142,4 @@ This project does not change system settings. To turn off ads and recommendation
 - Fonts: Amiri Quran and Noto Sans Arabic (SIL OFL 1.1).
 - Wallpapers: Wikimedia Commons; each photographer and licence is in [launcher/wallpapers/CREDITS.txt](launcher/wallpapers/CREDITS.txt) and on screen.
 - Weather: [Open-Meteo](https://open-meteo.com).
+- Radio: streamed live from its sources (radiojar.com and mp3quran.net); no audio is stored in this repository.
