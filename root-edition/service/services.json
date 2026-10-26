@@ -1,0 +1,1 @@
+{"id":"com.cleanyourtv.root.preview.service","description":"Root Preview recovery only","services":[{"name":"com.cleanyourtv.root.preview.service"}],"requiredACG":["activity.operation"]}

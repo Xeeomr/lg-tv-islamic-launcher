@@ -1,0 +1,34 @@
+{
+  "schema": 1,
+  "version": "1.2.0",
+  "changes": [
+    {
+      "pr": 60,
+      "issues": [
+        59
+      ],
+      "summary": "Allow confirmed Helper start when firmware denies status"
+    },
+    {
+      "pr": 61,
+      "issues": [
+        55
+      ],
+      "summary": "Validate Root migration early and recover pre-provision removal; OLED Flex recovery-service startup remains unresolved"
+    },
+    {
+      "pr": 62,
+      "issues": [
+        51
+      ],
+      "summary": "Retain safe Luna rejection metadata in installer diagnostics; UN70006LA installation refusal remains unresolved"
+    },
+    {
+      "pr": 63,
+      "issues": [],
+      "summary": "Add Root control for LG firmware update blocking"
+    }
+  ],
+  "excluded": [],
+  "acceptance": "2026-10-25: maintainer confirmed LG OLED55C3RLA / firmware 43.21.71 and reported all checks normal after Home/Back, triple-Home, standby/restart, rollback and firmware-control acceptance request; directed release. Tested installer/source revision not restated; no exact final-installer or original-reporter compatibility claim. See docs/RELEASE-1.2.0-ACCEPTANCE.md for confirmation, automated checks, verified published 1.1.0 rollback hashes and limitations. Issues #55/#51 remain partial; #59 original-device confirmation outstanding."
+}

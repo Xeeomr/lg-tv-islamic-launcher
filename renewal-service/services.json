@@ -1,0 +1,1 @@
+{"id":"com.gathin.tvhome.renewal","description":"Opt-in Developer Mode session renewal (Beta)","services":[{"name":"com.gathin.tvhome.renewal"}],"requiredACG":["activity.operation"]}

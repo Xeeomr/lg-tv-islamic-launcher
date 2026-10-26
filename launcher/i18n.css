@@ -1,0 +1,37 @@
+@font-face{font-family:"CYTV NotoSans";src:url("fonts/NotoSans.ttf") format("truetype");font-weight:400}
+@font-face{font-family:"CYTV NotoSansDevanagari";src:url("fonts/NotoSansDevanagari.ttf") format("truetype");font-weight:400}
+@font-face{font-family:"CYTV NotoSansKR";src:url("fonts/NotoSansKR.ttf") format("truetype");font-weight:400}
+/* System fallbacks cover Cyrillic, Hangul and Devanagari when Outfit lacks a glyph. */
+html,body,button{font-family:Outfit,"CYTV NotoSans","CYTV NotoSansDevanagari","CYTV NotoSansKR","Noto Sans","Noto Sans Devanagari","Noto Sans CJK KR","Malgun Gothic",sans-serif}
+#languagePicker{position:fixed;top:0;right:0;bottom:0;left:0;z-index:20000;display:flex;align-items:center;justify-content:center;background:rgba(7,10,14,.96);color:#f5f7fa}
+#languagePicker[hidden]{display:none}
+.language-card{width:1120px;max-width:92vw;max-height:92vh;overflow:auto;padding:36px 44px;border:1px solid #626a76;border-radius:24px;background:#202329}
+.language-card h2{font-size:36px;line-height:1.4}.language-card p{font-size:24px;line-height:1.5;margin:12px 0 20px}
+#languageChoices{display:flex;flex-wrap:wrap;margin:-8px;}
+#languageChoices button{font:inherit;font-size:26px;line-height:1.5;min-height:64px;padding:12px 22px;background:#343941;border:3px solid transparent;border-radius:12px;color:#fff;text-align:left}
+#languageChoices button[aria-pressed="true"]{border-color:#7f9ecb}
+#languageChoices button:focus{outline:3px solid #b8d3ff;outline-offset:3px;background:#46556c;border-color:#fff}
+#languageError{color:#ffd1bd}
+html[lang="hi"] #greeting,html[lang="ko"] #greeting{line-height:1.45}
+#renewalPanel,html .root-settings,#updatePanel{font-family:Outfit,"CYTV NotoSans","CYTV NotoSansDevanagari","CYTV NotoSansKR",sans-serif}
+/* Long localized dates wrap within the header instead of pushing shortcuts off screen. */
+#leftBlock{flex:1;min-width:0}
+#topButtons{flex-shrink:0;margin-left:32px}
+#clock,#ampm,.divider{flex-shrink:0}
+#date{min-width:0;white-space:normal;line-height:1.4;letter-spacing:.06em}
+html[lang="hi"] #greeting,html[lang="hi"] #date{letter-spacing:0}
+
+#homeConfirmation{position:fixed;top:0;right:0;bottom:0;left:0;z-index:30000;display:flex;align-items:center;justify-content:center;background:rgba(7,10,14,.88);color:#f5f7fa}
+#homeConfirmation[hidden]{display:none}
+.confirmation-card{box-sizing:border-box;width:840px;max-width:92vw;max-height:90vh;overflow:auto;padding:40px 44px;border:1px solid #626a76;border-radius:24px;background:#202329;box-shadow:0 24px 100px #0008}
+.confirmation-card h2{font-size:36px;line-height:1.25;margin:0 0 20px}
+.confirmation-card p{font-size:24px;line-height:1.5;margin:0 0 32px;white-space:pre-line}
+.confirmation-actions{display:flex;flex-wrap:wrap;}
+.confirmation-actions button{flex:1;font:inherit;font-size:25px;line-height:1.3;min-height:72px;margin:0;padding:16px 24px;border:3px solid #687381;border-radius:12px;background:#343941;color:#f5f7fa;cursor:pointer}
+.confirmation-actions button:focus{outline:4px solid #b8d3ff;outline-offset:4px;border-color:#fff;background:#46556c}
+@media(max-width:700px){.confirmation-card{padding:28px}.confirmation-card h2{font-size:28px}.confirmation-card p,.confirmation-actions button{font-size:22px}.confirmation-actions{flex-direction:column}}
+
+/* Margin spacing also works before grid/flex gap support. */
+#languageChoices button{width:calc(50% - 16px);margin:8px}
+.confirmation-actions{margin:-10px}
+.confirmation-actions button{margin:10px}

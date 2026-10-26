@@ -1,0 +1,24 @@
+{
+  "name": "clean-your-tv-build-tools",
+  "private": true,
+  "scripts": {
+    "lint:compat": "node scripts/check-tv-web.cjs",
+    "test:compat": "node tests/web-build.cjs",
+    "test:legacy-ui": "node tests/legacy-launcher.cjs"
+  },
+  "browserslist": [
+    "Chrome 38"
+  ],
+  "devDependencies": {
+    "@babel/core": "7.29.7",
+    "@babel/preset-env": "7.29.7",
+    "acorn": "8.19.0",
+    "core-js-bundle": "3.51.0",
+    "doiuse": "6.0.6",
+    "parse5": "7.3.0",
+    "playwright": "1.64.1",
+    "postcss": "8.5.31",
+    "postcss-preset-env": "11.6.1",
+    "safe-buffer": "5.2.1"
+  }
+}

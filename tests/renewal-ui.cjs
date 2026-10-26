@@ -1,0 +1,22 @@
+const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright');
+const assert=require('node:assert/strict');
+(async()=>{const browser=await chromium.launch({headless:true,channel:'chrome'});const page=await browser.newPage({viewport:{width:1920,height:1080},locale:'en'});const errors=[];page.on('pageerror',e=>errors.push(e.message));
+await page.addInitScript(()=>{window.calls=[];window.renewEnabled=false;window.PalmServiceBridge=function(){this.cancel=()=>{};this.call=(uri,data)=>{calls.push({uri,p:JSON.parse(data)});setTimeout(()=>{let r={returnValue:true};if(uri.includes('com.gathin.tvhome.renewal/')){if(uri.endsWith('/enable'))renewEnabled=true;if(uri.endsWith('/disable'))renewEnabled=false;r.state={enabled:renewEnabled,last:renewEnabled?{status:'healthy',checkedAt:Date.now(),remainingSeconds:3240000}:null};}else if(uri.endsWith('registerServerStatus'))r.connected=true;this.onservicecallback(JSON.stringify(r));},10);};};});
+await page.route('**/apps.js',r=>r.fulfill({body:'window.TV_APPS={apps:[{id:"test.app",title:"Test App",icon:"brand-v2-icon.png"}],inputs:[]};'}));
+await page.goto('file://'+require('path').resolve(__dirname,'../launcher/index.html'));
+await page.locator('#tiles .item').first().waitFor();
+assert.equal(await page.evaluate(()=>calls.filter(c=>c.uri.includes('tvhome.renewal')).length),0);
+await page.locator('#btnSettings').click();await page.locator('#renewalSummary').filter({hasText:'Auto-renewal off'}).waitFor();await page.locator('#developerOpen').click();
+await page.keyboard.press('ArrowRight');assert.equal(await page.evaluate(()=>document.activeElement.id),'renewalDiagnostics');await page.keyboard.press('ArrowLeft');assert.equal(await page.evaluate(()=>document.activeElement.id),'renewalToggle');
+await page.keyboard.press('Enter');await page.locator('#renewalStatus').filter({hasText:'Auto-renewal enabled (Beta)'}).waitFor();
+
+await page.locator('#renewalDiagnostics').click();assert.equal(await page.locator('#renewalDiagnostics').getAttribute('aria-expanded'),'true');assert(!(await page.locator('#renewalDetails').innerText()).includes('sessionToken'));
+await page.locator('#renewalToggle').click();await page.locator('#renewalStatus').filter({hasText:'Auto-renewal off'}).waitFor();await page.locator('#developerBack').click();
+await page.locator('#renewalUpdates').click();await page.locator('#updatePanel').waitFor({state:'visible'});
+await page.keyboard.press('Escape');await page.locator('#renewalPanel').waitFor({state:'visible'});
+assert.equal(await page.evaluate(()=>document.activeElement.id),'renewalUpdates');
+await page.keyboard.press('Tab');assert.equal(await page.evaluate(()=>document.activeElement.id),'renewalTV');
+await page.keyboard.press('Escape');await page.locator('#renewalPanel').waitFor({state:'hidden'});
+await page.keyboard.press('ArrowDown');await page.keyboard.press('Enter');
+assert(await page.evaluate(()=>calls.some(c=>c.p.id==='test.app')));
+assert.deepEqual(errors,[]);await browser.close();console.log('PASS Beta UI toggle, diagnostics, Back and launch after close');})();

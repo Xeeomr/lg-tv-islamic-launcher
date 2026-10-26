@@ -1,0 +1,54 @@
+name: Root Edition research / compatibility
+description: Report read-only diagnostics or a coordinated Root Edition test
+title: "[Root Edition] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Root Edition has no supported installer yet. Do not perform system changes just to fill this form.
+        Never attach credentials, pairing tokens, SSH keys, firmware, private backups or complete TV logs.
+  - type: input
+    id: hardware
+    attributes:
+      label: TV model and firmware
+      placeholder: OLED55C3RLA / 43.21.71
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Launcher, helper and Homebrew versions, if known
+  - type: dropdown
+    id: stage
+    attributes:
+      label: What did you test?
+      options:
+        - Read-only doctor
+        - Offline metadata planner
+        - Coordinated bounded hardware test
+        - Documentation / other
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Expected result and actual result
+      description: Include the button/screen, whether an exit dialog was open and whether the helper was stopped.
+    validations:
+      required: true
+  - type: dropdown
+    id: recovery
+    attributes:
+      label: Recovery result
+      options:
+        - No TV changes were made
+        - Original routing and controls restored
+        - Recovery not verified
+        - Recovery failed or reported a conflict
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Reviewed and redacted diagnostics (optional)
+      description: Prefer the doctor summary and a few relevant lines; omit private snapshots.

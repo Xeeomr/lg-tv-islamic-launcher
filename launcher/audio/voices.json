@@ -1,0 +1,13 @@
+{
+  "_comment": "Arabic names for adhan files. Any other .mp3/.ogg/.m4a placed in this folder is listed by its file name. Only add recordings you are allowed to use.",
+  "order": ["adhan-makkah.mp3", "adhan-madinah.mp3", "adhan-alafasy.mp3", "adhan-aqsa.mp3", "adhan-egypt.mp3", "adhan-sabah-fakhri.mp3", "adhan-beautiful.ogg"],
+  "names": {
+    "adhan-makkah.mp3": "الحرم المكي",
+    "adhan-madinah.mp3": "الحرم المدني",
+    "adhan-alafasy.mp3": "مشاري العفاسي",
+    "adhan-aqsa.mp3": "المسجد الأقصى",
+    "adhan-egypt.mp3": "مصر · عبد الناصر حرك",
+    "adhan-sabah-fakhri.mp3": "صباح فخري",
+    "adhan-beautiful.ogg": "أذان هادئ"
+  }
+}

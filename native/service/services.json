@@ -1,0 +1,1 @@
+{"id":"com.local.nativehome.service","description":"Native Home bounded startup prototype","services":[{"name":"com.local.nativehome.service"}],"requiredACG":["activity.operation","application.launcher"]}

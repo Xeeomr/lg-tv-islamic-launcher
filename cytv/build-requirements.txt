@@ -1,0 +1,6 @@
+-r requirements.txt
+pyinstaller==6.22.3
+ziglang==0.14.1
+
+# Windowed desktop application (kept out of the console executable).
+PySide6-Essentials==6.10.2

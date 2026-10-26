@@ -1,0 +1,5 @@
+{
+  "name": "com.gathin.tvhome.prayer",
+  "version": "1.0.0",
+  "main": "service.js"
+}

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="installation_channel" formatted="false">CYTV</string>
+    <string name="installation_progress" formatted="false">Ação da TV em andamento</string>
+    <string name="webview_update" formatted="false">Atualize o Android System WebView ou o Chrome e abra o CYTV novamente (requer WebView 108 ou superior).</string>
+</resources>

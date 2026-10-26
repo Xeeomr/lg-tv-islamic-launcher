@@ -1,0 +1,1 @@
+{"id":"com.gathin.tvhome.prayer","description":"Prayer time alerts and adhan","services":[{"name":"com.gathin.tvhome.prayer"}],"requiredACG":["activity.operation","application.launcher"]}

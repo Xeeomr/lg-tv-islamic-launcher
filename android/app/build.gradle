@@ -1,0 +1,76 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.chaquo.python'
+}
+
+android {
+    namespace 'com.cleanyourtv.android'
+    buildFeatures { buildConfig true }
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.cleanyourtv.android'
+        minSdk 24
+        targetSdk 35
+        versionCode 10
+        versionName '0.2.1-preview'
+        ndk { abiFilters 'arm64-v8a' }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = '17' }
+    signingConfigs {
+        debug {
+            if (System.getenv('CYTV_ANDROID_KEYSTORE')) {
+                storeFile file(System.getenv('CYTV_ANDROID_KEYSTORE'))
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+            }
+        }
+    }
+    sourceSets {
+        main.assets.srcDir layout.buildDirectory.dir('generated/assets')
+    }
+}
+
+chaquopy {
+    defaultConfig {
+        version '3.12'
+        if (System.getenv('CYTV_BUILD_PYTHON')) { buildPython System.getenv('CYTV_BUILD_PYTHON') }
+        pip {
+            install 'paramiko==3.5.1'
+            install 'websockets==15.0.1'
+            install 'cryptography==42.0.8'
+            install 'bcrypt==3.2.2'
+            install 'PyNaCl==1.5.0'
+        }
+        extractPackages 'cytv'
+    }
+    sourceSets {
+        main { srcDir layout.buildDirectory.dir('generated/python') }
+    }
+}
+
+tasks.register('stageCytv', Exec) {
+    workingDir rootProject.projectDir.parentFile
+    commandLine System.getenv('CYTV_BUILD_PYTHON') ?: 'python3', 'android/stage.py'
+    inputs.dir rootProject.file('../cytv')
+    inputs.file rootProject.file('stage.py')
+    inputs.file rootProject.file('../lgtv.py')
+    inputs.file rootProject.file('../release-versions.json')
+    inputs.property('sourceCommit', providers.exec {
+        workingDir rootProject.projectDir.parentFile
+        commandLine 'git', 'rev-parse', 'HEAD'
+    }.standardOutput.asText)
+    inputs.file rootProject.file('../build/cytv/payload/payload.json')
+    inputs.dir rootProject.file('../build/cytv/payload')
+    outputs.dir layout.buildDirectory.dir('generated/python')
+    outputs.dir layout.buildDirectory.dir('generated/assets')
+}
+tasks.configureEach {
+    if ((name.startsWith('generate') || name.startsWith('merge')) && name.endsWith('PythonSources')) dependsOn 'stageCytv'
+    if (name == 'preBuild') dependsOn 'stageCytv'
+}

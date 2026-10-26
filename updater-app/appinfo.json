@@ -1,0 +1,16 @@
+{
+  "id": "com.cleanyourtv.updater",
+  "version": "0.2.1",
+  "vendor": "Clean Your TV",
+  "type": "web",
+  "main": "index.html",
+  "title": "Home Updater",
+  "icon": "icon.png",
+  "resolution": "1920x1080",
+  "requiredACG": [
+    "application.launcher"
+  ],
+  "largeIcon": "largeIcon.png",
+  "iconColor": "#241d19",
+  "titleVisible": true
+}

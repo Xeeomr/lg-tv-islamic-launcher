@@ -1,0 +1,5 @@
+{
+  "name": "com.gathin.tvhome.renewal",
+  "version": "1.4.1",
+  "main": "service.js"
+}

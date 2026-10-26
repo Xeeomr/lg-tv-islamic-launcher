@@ -1,0 +1,55 @@
+name: cytv installer problem
+description: Report a failed installation, connection or recovery step.
+title: '[cytv] '
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Attach the diagnostic JSON printed by cytv after the error, or run `cytv doctor --report`.
+        The report contains installer/OS versions, the failed step and stack locations without raw exception text.
+        Review it before posting. Never attach SSH keys, pairing tokens, your profile folder, IP addresses, SSIDs or app inventories.
+  - type: dropdown
+    id: edition
+    attributes:
+      label: Edition
+      options:
+        - No-root
+        - Root
+    validations:
+      required: true
+  - type: dropdown
+    id: desktop
+    attributes:
+      label: Computer operating system
+      options:
+        - Windows
+        - macOS Apple Silicon
+        - macOS Intel
+        - Linux
+    validations:
+      required: true
+  - type: input
+    id: tv
+    attributes:
+      label: TV model and firmware
+      placeholder: 'Example: OLED55C3RLA, 43.21.71 (no serial number)'
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: What did you do?
+      description: Include the cytv command without addresses/key paths, and the wizard step that failed.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostic
+    attributes:
+      label: Diagnostic report and error message
+      description: Attach the diagnostic JSON, or paste its contents here. Include the cytv version if a report could not be saved. Do not paste raw private logs.
+    validations:
+      required: true

@@ -1,0 +1,21 @@
+Tanzil Quran Text (Uthmani, Version 1.1)
+Copyright (C) 2007-2026 Tanzil Project
+License: Creative Commons Attribution 3.0
+
+This copy of the Quran text is carefully produced, highly verified and continuously monitored by a
+group of specialists in Tanzil Project.
+
+TERMS OF USE:
+- Permission is granted to copy and distribute verbatim copies of this text, but CHANGING IT IS NOT
+  ALLOWED.
+- This Quran text can be used in any website or application, provided that its source (Tanzil
+  Project) is clearly indicated, and a link is made to tanzil.net to enable users to keep track of
+  changes.
+- This copyright notice shall be included in all verbatim copies of the text, and shall be kept
+  intact.
+
+Please check updates at: http://tanzil.net/updates/
+
+The files in this folder hold the text verbatim (one JSON file per surah, obtained through the
+alquran.cloud "quran-uthmani" edition of the Tanzil text). The app hides the basmala that the source
+prefixes to the first ayah of each surah only when displaying a single ayah; the files are unchanged.

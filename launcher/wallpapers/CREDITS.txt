@@ -1,0 +1,20 @@
+faisal-bluehour: "Faisal Mosque at Blue Hour (Dawn).jpg" by Sannan Tariq, CC BY-SA 3.0, Wikimedia Commons
+faisal-dawn: "Dawn at Shah Faisal Mosque.jpg" by Muhammad Ashar, CC BY-SA 3.0, Wikimedia Commons
+blue-dawn: "The Blue Mosque in Istanbul right at dawn this week (40070612631).jpg" by Dion Hinchcliffe, CC BY-SA 2.0, Wikimedia Commons
+blue-dusk: "Blue Mosque Courtyard Dusk Wikimedia Commons.jpg" by Benh LIEU SONG (Flickr), CC BY-SA 3.0, Wikimedia Commons
+kaaba: "Kaaba, Makkah3.jpg" by Moataz Egbaria (معتز اغبارية), CC BY-SA 3.0, Wikimedia Commons
+aqsa: "Alaqsa mosque 004.jpg" by براء, CC BY-SA 4.0, Wikimedia Commons
+zayed: "Sheikh Zayed Grand Mosque @ Abu Dhabi (15856602738).jpg" by Guilhem Vellut, CC BY 2.0, Wikimedia Commons
+qaboos: "Muscat, moschea del sultano qaboos, esterno 01.jpg" by Francesco Bini, CC BY-SA 4.0, Wikimedia Commons
+qaboos-court: "Muscat, moschea del sultano qaboos, cortile 01.jpg" by Francesco Bini, CC BY-SA 4.0, Wikimedia Commons
+nasir: "Mezquita de Nasirolmolk, Shiraz, Irán, 2016-09-24, DD 57-59 HDR.jpg" by Diego Delso, CC BY-SA 4.0, Wikimedia Commons
+blue: "Blue mosque istanbul (14292801905).jpg" by Diego Delso, CC BY-SA 4.0, Wikimedia Commons
+zayed-night: "Sheikh Zayed Mosque Silhouette.jpg" by Diego Delso, CC BY-SA 4.0, Wikimedia Commons
+badshahi: "Silhouette of Badshahi Mosque at sunset.jpg" by Siraj Ul Hassan, CC BY-SA 3.0, Wikimedia Commons
+istanbul-dusk: "Silhouette of the New Mosque in Istanbul.jpg" by Vladimir Pankratov, CC BY-SA 4.0, Wikimedia Commons
+faisal-dusk: "Blue Hour at Faisal Mosque.jpg" by Muhammad Ashar, CC BY-SA 4.0, Wikimedia Commons
+nabawi: "Masjid Nabwi 14.jpg" by Tahir mq, CC BY-SA 4.0, Wikimedia Commons
+madinah-haram: "Alharam in madinah.jpg" by Osmanzain, CC BY-SA 4.0, Wikimedia Commons
+badshahi-night: "Badshahi Mosque night view.JPG" by Ahmad Tahir, CC BY-SA 3.0, Wikimedia Commons
+hagia-night: "Hagia Sophia, view at night.jpg" by Peterkz, CC BY 4.0, Wikimedia Commons
+brunei-night: "Sultan Omar Ali Saifuddin Mosque 02.jpg" by sam garza, CC BY 2.0, Wikimedia Commons

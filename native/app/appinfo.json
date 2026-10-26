@@ -1,0 +1,19 @@
+{
+  "id": "com.local.nativehome",
+  "version": "0.6.19",
+  "type": "native",
+  "main": "detach",
+  "title": "Home Helper",
+  "icon": "brand-v2-icon.png",
+  "requiredACG": [
+    "application.launcher",
+    "activity.operation",
+    "activity.query"
+  ],
+  "noWindow": true,
+  "noSplashOnLaunch": true,
+  "spinnerOnLaunch": false,
+  "largeIcon": "brand-v2-largeIcon.png",
+  "iconColor": "#241d19",
+  "titleVisible": true
+}

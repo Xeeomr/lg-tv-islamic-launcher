@@ -1,0 +1,23 @@
+{
+  "id": "com.gathin.tvhome",
+  "version": "1.4.1",
+  "vendor": "tv-vibehack",
+  "type": "web",
+  "main": "index.html",
+  "title": "الرئيسية",
+  "icon": "brand-v2-icon.png",
+  "largeIcon": "brand-v2-largeIcon.png",
+  "bgColor": "#000000",
+  "iconColor": "#241d19",
+  "resolution": "1920x1080",
+  "disableBackHistoryAPI": true,
+  "requiredACG": [
+    "application.launcher",
+    "network.query"
+  ],
+  "supportGIP": true,
+  "needNetworkToLaunchOnBoot": false,
+  "splashBackground": "splash.jpg",
+  "titleVisible": true,
+  "systemUpdateProtocol": 1
+}
