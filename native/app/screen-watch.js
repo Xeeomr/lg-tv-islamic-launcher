@@ -1,5 +1,7 @@
 'use strict';
 var fs=require('fs'),os=require('os'),WebSocket=require('./websocket');
+// The pairing key is shared with Home's services: registering with fewer permissions would narrow it for all of them.
+var PERMISSIONS=['LAUNCH','LAUNCH_WEBAPP','APP_TO_APP','CLOSE','TEST_OPEN','TEST_PROTECTED','CONTROL_AUDIO','CONTROL_DISPLAY','CONTROL_INPUT_JOYSTICK','CONTROL_INPUT_MEDIA_RECORDING','CONTROL_INPUT_MEDIA_PLAYBACK','CONTROL_INPUT_TV','CONTROL_POWER','CONTROL_TV_SCREEN','READ_APP_STATUS','READ_CURRENT_CHANNEL','READ_INPUT_DEVICE_LIST','READ_NETWORK_STATE','READ_RUNNING_APPS','READ_TV_CHANNEL_LIST','WRITE_NOTIFICATION_TOAST','READ_POWER_STATE','READ_COUNTRY_INFO','CONTROL_INPUT_TEXT','CONTROL_MOUSE_AND_KEYBOARD','READ_INSTALLED_APPS','READ_SETTINGS','READ_STORAGE_DEVICE_LIST'];
 // Local self-connection: the TV rejects loopback, but accepts its own LAN address.
 // Never accepts a remote endpoint or launches anything itself.
 module.exports=function(data,log,onForeground,onReset,onPower){
@@ -25,7 +27,7 @@ module.exports=function(data,log,onForeground,onReset,onPower){
   var deadline=setTimeout(function(){s.terminate();},10000),pulse=null,alive=true;
   cleanup=function(){clearTimeout(deadline);clearInterval(pulse);};
   s.on('open',function(){
-   s.send(JSON.stringify({type:'register',id:'register',payload:{forcePairing:false,pairingType:'PROMPT','client-key':key,manifest:{manifestVersion:1,appVersion:'1.1',permissions:['READ_APP_STATUS','READ_RUNNING_APPS','READ_POWER_STATE','CONTROL_POWER']}}}));
+   s.send(JSON.stringify({type:'register',id:'register',payload:{forcePairing:false,pairingType:'PROMPT','client-key':key,manifest:{manifestVersion:1,appVersion:'1.1',permissions:PERMISSIONS}}}));
   });
   s.on('pong',function(){alive=true;});
   s.on('message',function(raw){

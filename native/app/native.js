@@ -151,7 +151,8 @@ function start(){lastAck=monotonic();child=cp.spawn(root+'/relay',[],{stdio:['pi
  child.stdin.on('error',function(){});
 }
 var timer=setInterval(function(){if(stopping)return;readHomeRequest();try{var raw=fs.readFileSync(data+'/control.json','utf8');if(raw!==lastCommand){lastCommand=raw;var command=JSON.parse(raw);diagnosticCommand(command.cmd,command.nonce);if(command.cmd==='startup-status')service.call('luna://com.local.nativehome.service/status',{},function(r){log({event:'startup-status',result:r.payload});});if(command.cmd==='stop'&&child)child.stdin.write('Q');if(command.cmd==='stall-worker'&&child)child.stdin.write('S');if(command.cmd==='stall-controller'){cp.spawn(root+'/resume',[String(process.pid)],{stdio:'ignore'});log({event:'simulate-controller-stall'});process.kill(process.pid,'SIGSTOP');}}}catch(e){}
- if(resumePendingUntil&&ready&&!launching&&!visitingLG&&homeControl.enabled()){
+ // Waking from standby: the key reader may still be restarting; launching Home does not need it.
+ if(resumePendingUntil&&!launching&&!visitingLG&&homeControl.enabled()){
   var resumeDue=resumePendingUntil;resumePendingUntil=0;
   if(!shouldResumeLaunch(lastForeground)){log({event:'resume-already-foreground'});}
   else if(monotonic()<=resumeDue){launching=true;log({event:'resume-launch'});launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'resume-launch-failed'});});}
@@ -161,7 +162,7 @@ var timer=setInterval(function(){if(stopping)return;readHomeRequest();try{var ra
  var now=monotonic();
  if(diagnosticUntil&&now>=diagnosticNext){diagnostic('sample');diagnosticNext=now+1000;}
  if(resumeGuardUntil&&now>=resumeGuardUntil)cancelResume();
- if(resumeGuardUntil&&resumeRetries<2&&ready&&!launching&&!visitingLG&&homeControl.enabled()&&
+ if(resumeGuardUntil&&resumeRetries<4&&!launching&&!visitingLG&&homeControl.enabled()&&
     lastForeground==='com.webos.app.home'&&lgHomeSince!==null&&now-lgHomeSince>=1500&&now-lastLaunchSettledAt>=5000){
   resumeRetries++;launching=true;log({event:'resume-retry',attempt:resumeRetries});
   launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'resume-retry-failed'});});
@@ -183,23 +184,30 @@ service.call('luna://com.local.nativehome.service/status',{},function(m){
 });
 
 var powerPolicy=require('./power-policy')();
-var watchedApps=[];try{watchedApps=JSON.parse(fs.readFileSync(data+'/apps.json','utf8'));if(!Array.isArray(watchedApps))watchedApps=[];}catch(e){}
-var screenPolicy=require('./screen-policy')(watchedApps);
+var screenPolicy=require('./screen-policy')(),gapTimer=null;
 var screenWatch=require('./screen-watch')(data,screenLog,function(id){
  if(id==='com.webos.app.home'){if(lgHomeSince===null)lgHomeSince=monotonic();}
  else {lgHomeSince=null;if(id&&id!=='com.webos.app.cpcover'&&id!=='com.gathin.tvhome')cancelResume();}
  lastForeground=id;lastForegroundAt=monotonic();log({event:'foreground',id:id});diagnostic('foreground');
  var exited=screenPolicy.next(id,monotonic());
+ clearTimeout(gapTimer);
+ if(id===''&&screenPolicy.gapFromApp(monotonic()))gapTimer=setTimeout(function(){
+  var now=monotonic();
+  if(lastForeground!==''||!screenPolicy.gapFromApp(now)||!homeControl.enabled()||visitingLG||stopping||launching||!ready||
+     powerSleep||now-powerChangedAt<8000||now<=suppressReturnUntil)return;
+  resumeGuardUntil=now+30000;resumeRetries=0;launching=true;log({event:'return-on-gap'});
+  launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'return-on-gap-failed'});});
+ },350);
  if(exited&&homeControl.enabled()&&!visitingLG&&monotonic()>suppressReturnUntil&&ready&&!stopping&&!launching){
   resumeGuardUntil=monotonic()+30000;resumeRetries=0;
   launching=true;log({event:'return-after-exit'});
   launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'return-after-exit-failed'});});
  }
  // LG often takes the screen back ~1s after our launch. Answer at once instead of waiting for the slow retry.
- if(id==='com.webos.app.home'&&resumeGuardUntil&&resumeRetries<3&&ready&&!launching&&!visitingLG&&!stopping&&homeControl.enabled()&&
+ if(id==='com.webos.app.home'&&resumeGuardUntil&&resumeRetries<5&&!launching&&!visitingLG&&!stopping&&homeControl.enabled()&&
     monotonic()>suppressReturnUntil&&monotonic()-lastLaunchSettledAt<20000){
   resumeRetries++;launching=true;log({event:'resume-retry-fast',attempt:resumeRetries});
-  setTimeout(function(){launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'resume-retry-fast-failed'});});},120);
+  launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)log({event:'resume-retry-fast-failed'});});
  }
 },function(){lastForeground=null;lastForegroundAt=null;monitor='reset';monitorReason=null;lgHomeSince=null;screenPolicy.reset();diagnostic('monitor-reset');},function(p){
  log({event:'power',state:p.state,processing:p.processing,onOff:p.onOff});
@@ -208,7 +216,7 @@ var screenWatch=require('./screen-watch')(data,screenLog,function(id){
  if(sleeping!==powerSleep){powerSleep=sleeping;powerChangedAt=monotonic();if(!sleeping)lastAck=monotonic();}
  if(p.onOff==='off'||p.state==='Active Standby'||p.state==='Suspend')cancelResume();
  if(powerPolicy.next(p)&&homeControl.enabled()&&!visitingLG&&!stopping){
-  var now=monotonic();resumePendingUntil=now+10000;resumeGuardUntil=now+30000;resumeRetries=0;
+  var now=monotonic();resumePendingUntil=now+20000;resumeGuardUntil=now+40000;resumeRetries=0;
   lgHomeSince=lastForeground==='com.webos.app.home'?now:null;
  }
 });

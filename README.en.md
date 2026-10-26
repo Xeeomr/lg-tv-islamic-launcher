@@ -62,7 +62,7 @@ Built on [Clean Your TV](https://github.com/Razdva122/clean-your-tv-lg-webos) (M
 - The radio pauses for the adhan and resumes afterwards; the station name shows on Home and the screensaver.
 
 **Speed and stability**
-- Home opens the new interface, and leaving any app brings you back to it.
+- Home and EXIT open the new interface, and leaving any app or input (HDMI and others) brings you back to it in under a second without LG's home showing.
 - After turning the TV off and on (standby) the new interface appears directly.
 - Pressing Home **three times within two seconds** opens LG's original home as an emergency exit.
 
@@ -119,6 +119,9 @@ LG's Developer Mode is a timed session. If it expires, installed apps (including
 | The adhan is not audible | The TV volume is low: Settings → Sound → Raise TV volume for the adhan |
 | The adhan does not return to the previous app | Settings → About → the "Diagnostics" line shows why |
 
+## Stop LG's home from opening at power on
+LG opens its own home every time the TV turns on. Turn that off once: Settings → General → System → Additional settings → Home settings → **Home Auto Launch** → Off. The TV then comes back straight to this interface.
+
 ## Uninstall and going back to LG's home
 - **Temporarily**: press Home three times, or Settings → Backup and restore → Back to LG's original home.
 - **Permanently**: delete the "Home" and "Home Helper" apps from the TV's app list, or turn off Developer Mode. Nothing in the TV system itself is changed.
@@ -129,7 +132,7 @@ This project does not change system settings. To turn off ads and recommendation
 - Settings → General → About this TV → User agreements: withdraw consent for viewing information and interest-based ads.
 
 ## Known limitations
-- LG's home can flash for under a second when leaving some apps. Removing it completely is not possible without root.
+- Leaving an app can show a black screen for under a second before Home appears, a little longer if the system closed Home to free memory.
 - On a cold boot (after unplugging) LG's home can show for a few seconds before Helper starts.
 - The adhan and screensaver do not run while the TV is in standby.
 - Weather alone needs the internet; offline it shows the last update time.

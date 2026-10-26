@@ -6,6 +6,8 @@ int filter_event(struct filter*f,const struct ev*e,uint64_t now){
  f->last=now;
  /* Cursor-show notifications are not physical button presses. */
  if(e->code==1198)return PASS;
+ /* EXIT would close the app and let the system raise LG Home; open the custom Home instead. */
+ if(e->code==174&&!f->disabled){f->short_press=0;f->count=0;return e->value==1?OPEN_HOME:DROP;}
  if(e->code==412){
   if(e->value==1&&!f->back){f->back=1;f->back_fired=0;f->back_since=now;}
   if(e->value==0){f->back=0;f->back_fired=0;}

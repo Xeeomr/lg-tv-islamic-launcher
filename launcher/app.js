@@ -822,7 +822,7 @@
       focusGlass.style.transform = "translate(" + glassLeft + "px," + glassTop + "px)";
       focusGlassVisible || (focusGlass.style.transition = "none", focusGlass.offsetWidth, focusGlass.style.transition = "", focusGlass.style.opacity = "1", focusGlassVisible = true);
       0 === row ? function (e) {
-        var t = e.app.title;
+        var t = e.app.title === "Apps" ? "كل التطبيقات" : e.app.title;
         heroTitle.style.top = (TILE_BASE - HERO_OFFSET) + "px";
         heroVisible ? heroTitle.textContent !== t && (heroTitle.style.opacity = "0", heroTitle.style.transform = "translateX(-24px)", clearTimeout(heroTitle.swap), heroTitle.swap = setTimeout(function () {
           heroTitle.textContent = t;

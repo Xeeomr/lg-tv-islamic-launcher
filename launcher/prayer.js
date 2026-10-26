@@ -308,7 +308,7 @@
     credit = el('div'); credit.id = 'wallCredit'; document.body.appendChild(credit);
     head = el('div'); head.id = 'prayerHead';
     head.innerHTML = '<div class="h-time"><span id="hClock"></span><span class="h-ampm" id="hAmpm"></span></div>' +
-      '<div class="h-dates"><div class="h-day" id="hDay"></div><div class="h-date" id="hDate"></div></div><div class="h-sep" id="hSep"></div>' +
+      '<div class="h-dates"><div class="h-day" id="hDay"></div><div class="h-date" id="hDate"></div><div class="h-date" id="hHijri"></div></div><div class="h-sep" id="hSep"></div>' +
       '<div class="h-weather" id="hWeather"><div class="h-wtop"><span id="hTemp"></span><span class="h-wicon" id="hWIcon"></span></div><div class="h-wtext" id="hWText"></div><div class="h-wrange" id="hWRange"></div></div>';
     document.body.appendChild(head);
     card = el('div'); card.id = 'prayerCard';
@@ -316,22 +316,34 @@
       '<div class="p-box p-ramadan"><div class="r-text"><div class="r-label" id="rLabel"></div><div class="r-num"><span id="rNum"></span><span class="r-unit" id="rUnit"></span></div><div class="r-sub" id="rSub"></div></div>' +
       '<svg class="r-icon" viewBox="0 0 64 64"><path d="M30 6a26 26 0 1 0 28 33A21 21 0 0 1 30 6z"/><path d="M46 14l2.4 5 5.4.6-4 3.7 1.1 5.4-4.9-2.8-4.8 2.8 1.1-5.4-4-3.7 5.4-.6z"/></svg></div></div>';
     document.body.appendChild(card);
-    setTimeout(function () { card.className = 'in'; head.className = 'in'; }, 60);
+    setTimeout(function () { card.className = 'in'; head.className += ' in'; }, 60);
   }
   function renderHead() {
     if (!head) return;
     var now = new Date(), f = fmtTime(now.getTime()), row = todayRow();
-    byId('hClock').textContent = f.t; byId('hAmpm').textContent = f.long;
-    byId('hDay').textContent = DAYS[now.getDay()];
-    byId('hDate').textContent = ar(now.getDate()) + ' ' + MONTHS[now.getMonth()] + ' ' + ar(now.getFullYear()) + (settings.showHijri && row ? ' · ' + hijriText(row.h) : '');
+    setText('hClock', f.t); setText('hAmpm', f.long);
+    setText('hDay', DAYS[now.getDay()]);
+    setText('hDate', ar(now.getDate()) + ' ' + MONTHS[now.getMonth()] + ' ' + ar(now.getFullYear()));
+    setText('hHijri', settings.showHijri && row ? hijriText(row.h) : '');
     var box = byId('hWeather'), show = settings.weather && weather;
     box.style.display = show ? '' : 'none'; byId('hSep').style.display = show ? '' : 'none';
-    if (!show) return;
-    byId('hTemp').textContent = temp(weather.t);
-    byId('hWIcon').innerHTML = weatherIcon(weather.c, weather.day);
+    if (!show) return fitHead();
+    setText('hTemp', temp(weather.t));
+    var icon = weather.c + '|' + weather.day;
+    if (renderHead.icon !== icon) { renderHead.icon = icon; byId('hWIcon').innerHTML = weatherIcon(weather.c, weather.day); }
     var stale = Date.now() - weather.at > 60 * 60000;
-    byId('hWText').textContent = weatherText(weather.c) + ' · ' + settings.city.name;
-    byId('hWRange').textContent = stale ? 'آخر تحديث ' + fmtClock(weather.at) : 'العظمى ' + temp(weather.max) + ' الصغرى ' + temp(weather.min);
+    setText('hWText', weatherText(weather.c) + ' · ' + settings.city.name);
+    setText('hWRange', stale ? 'آخر تحديث ' + fmtClock(weather.at) : 'العظمى ' + temp(weather.max) + ' · الصغرى ' + temp(weather.min));
+    fitHead();
+  }
+  function setText(id, text) { var e = byId(id); if (e.textContent !== text) e.textContent = text; }
+  // Keep the clock block clear of the top buttons: drop the weather details, then the weather, when space runs out.
+  function fitHead() {
+    var last = document.getElementById('btnSettings'), sig = head.textContent;
+    if (!last || sig === fitHead.sig) return;
+    fitHead.sig = sig;
+    head.className = head.className.replace(/ ?tight\d/g, '');
+    for (var level = 1; level <= 2 && head.getBoundingClientRect().left < last.getBoundingClientRect().right + 48; level++) head.className += ' tight' + level;
   }
   function renderRamadan() {
     var label = byId('rLabel'), num = byId('rNum'), unit = byId('rUnit'), sub = byId('rSub');
@@ -403,9 +415,10 @@
     adhanAudio.ontimeupdate = function () { if (adhanAudio && adhanAudio.duration) byId('aProg').style.width = (adhanAudio.currentTime / adhanAudio.duration * 100) + '%'; };
     var p = adhanAudio.play(); if (p && p.catch) p.catch(function () {});
   }
-  function finishAdhan() {
+  function finishAdhan(stayHome) {
     if (!adhanEvent) return;
     var ev = adhanEvent; adhanEvent = null;
+    if (stayHome) ev.returnTo = '';
     if (adhanAudio) { try { adhanAudio.pause(); } catch (_) {} adhanAudio = null; }
     overlay.className = '';
     if (window.RadioUI) RadioUI.resumeAfterAdhan();
@@ -426,10 +439,13 @@
   function tick() {
     var now = Date.now();
     ensureData();
-    render();
-    if (Math.floor(now / 1000) % 30 === 0) setWall(currentWall());
-    if (saverOn) updateSaver();
-    var wifi = byId('btnWifi'); if (wifi) wifi.classList.toggle('online', !/offline|غير متصل/i.test(byId('wifiLabel').textContent));
+    // While another app is in front only the prayer checks run; the screen is refreshed on return.
+    if (!document.hidden) {
+      render();
+      if (Math.floor(now / 1000) % 30 === 0) setWall(currentWall());
+      if (saverOn) updateSaver();
+      var wifi = byId('btnWifi'); if (wifi) wifi.classList.toggle('online', !/offline|غير متصل/i.test(byId('wifiLabel').textContent));
+    }
     if (settings.alert !== 'off') events().forEach(function (e) {
       if (!settings.perPrayer[e.key]) return;
       if (now >= e.ts && now < e.ts + 90000) startAdhan({id: e.id, key: e.key, name: e.name, ts: e.ts});
@@ -915,6 +931,7 @@
       autoLocate(function (row) { if (row) { setCity(row); showBanner('تم تحديد مدينتك تلقائيًا: ' + settings.city.name + ' · يمكنك تغييرها من الإعدادات', 9000); } });
     }, 2500);
     buildHome();
+    setTimeout(function () { fitHead.sig = ''; renderHead(); }, 3000); // fonts may change widths after loading
     ensureData();
     setWall(currentWall(), true);
     render();
@@ -937,7 +954,13 @@
         if (e.keyCode !== 403) stopSaver(); // RED is the key Helper presses to cancel LG's screensaver
       }
     }, true);
-    document.addEventListener('webOSRelaunch', function (e) { idleAt = Date.now(); if (!panel || panel.hidden) stopSaver(); launchEvent(e && e.detail); });
+    document.addEventListener('webOSRelaunch', function (e) {
+      idleAt = Date.now(); if (!panel || panel.hidden) stopSaver();
+      // Home or EXIT pressed during the adhan: stop it and stay on Home.
+      var d = e && e.detail; try { d = typeof d === 'string' ? JSON.parse(d) : d; } catch (_) { d = null; }
+      if (adhanEvent && !(d && (d.adhan || (d.params && d.params.adhan)))) finishAdhan(true);
+      launchEvent(e && e.detail);
+    });
     // EXIT closes our window: stop the adhan and go back. Coming back to Home shows a fresh verse.
     document.addEventListener('visibilitychange', function () {
       if (document.hidden) { if (adhanEvent) finishAdhan(); }
