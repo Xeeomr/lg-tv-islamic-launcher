@@ -178,3 +178,4 @@ body.scrolled #prayerCard, body.scrolled #prayerHead, body.scrolled #wallCredit,
 
 /* Arabic text in the launcher's own panels */
 html[lang="ar"] #renewalPanel, html[lang="ar"] .root-settings, html[lang="ar"] #homeConfirmation, html[lang="ar"] #languagePicker, html[lang="ar"] #appPicker, html[lang="ar"] #toast, html[lang="ar"] .undo-bar { direction: rtl; font-family: 'ThmanyahSans', 'NotoSansArabic', sans-serif; }
+

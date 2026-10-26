@@ -117,6 +117,35 @@ function onWorkerExit(code,signal){
  }
  finish(code,signal);
 }
+// LG shows its own clock screensaver after a few idle minutes, and the API for refusing it is closed to
+// Developer Mode apps. When it is requested while Home is in front, press a key Home ignores (RED) through
+// the TV's remote-control socket, which cancels the request, and ask Home to show its own screensaver.
+var SSAP_PERMISSIONS=['LAUNCH','LAUNCH_WEBAPP','APP_TO_APP','CLOSE','TEST_OPEN','TEST_PROTECTED','CONTROL_AUDIO','CONTROL_DISPLAY','CONTROL_INPUT_JOYSTICK','CONTROL_INPUT_MEDIA_RECORDING','CONTROL_INPUT_MEDIA_PLAYBACK','CONTROL_INPUT_TV','CONTROL_POWER','CONTROL_TV_SCREEN','READ_APP_STATUS','READ_CURRENT_CHANNEL','READ_INPUT_DEVICE_LIST','READ_NETWORK_STATE','READ_RUNNING_APPS','READ_TV_CHANNEL_LIST','WRITE_NOTIFICATION_TOAST','READ_POWER_STATE','READ_COUNTRY_INFO','CONTROL_INPUT_TEXT','CONTROL_MOUSE_AND_KEYBOARD','READ_INSTALLED_APPS','READ_SETTINGS','READ_STORAGE_DEVICE_LIST'];
+function ssapButton(name){
+ try{
+  var key=JSON.parse(fs.readFileSync(data+'/ssap-key.json','utf8')).key,WS=require('./websocket'),ifs=require('os').networkInterfaces(),host=null;
+  Object.keys(ifs).forEach(function(n){ifs[n].forEach(function(a){if(!host&&!a.internal&&(a.family==='IPv4'||a.family===4)&&a.address.indexOf('169.254.')!==0)host=a.address;});});
+  if(!host||!key)return;
+  var s=new WS('wss://'+host+':3001',{rejectUnauthorized:false,handshakeTimeout:3000,perMessageDeflate:false}),done=false,t=setTimeout(fin,8000);
+  function fin(){if(done)return;done=true;clearTimeout(t);try{s.terminate();}catch(e){}}
+  s.on('open',function(){s.send(JSON.stringify({type:'register',id:'r',payload:{forcePairing:false,pairingType:'PROMPT','client-key':key,manifest:{manifestVersion:1,appVersion:'1.1',permissions:SSAP_PERMISSIONS}}}));});
+  s.on('message',function(raw){
+   var m;try{m=JSON.parse(String(raw));}catch(e){fin();return;}
+   if(m.type==='registered')s.send(JSON.stringify({type:'request',id:'p',uri:'ssap://com.webos.service.networkinput/getPointerInputSocket',payload:{}}));
+   else if(m.id==='p'&&m.payload&&m.payload.socketPath){var p=new WS(m.payload.socketPath,{rejectUnauthorized:false});p.on('open',function(){p.send('type:button\nname:'+name+'\n\n');setTimeout(function(){try{p.terminate();}catch(e){}fin();},500);});p.on('error',fin);}
+   else if(m.type==='error'||(m.payload&&m.payload.pairingType))fin();
+  });
+  s.on('error',fin);
+ }catch(e){log({event:'ssap-button-error',error:String(e)});}
+}
+var lastSaverSwap=0;
+function replaceLgSaver(p){
+ if(p.processing!=='Request Screen Saver'&&p.state!=='Screen Saver')return;
+ if(lastForeground!=='com.gathin.tvhome'||!homeControl.enabled()||stopping||monotonic()-lastSaverSwap<20000)return;
+ lastSaverSwap=monotonic();log({event:'lg-saver-replaced',state:p.state,processing:p.processing});
+ ssapButton('RED');
+ setTimeout(function(){service.call('luna://com.webos.applicationManager/launch',{id:'com.gathin.tvhome',params:{saver:true}},function(){});},1200);
+}
 function start(){lastAck=monotonic();child=cp.spawn(root+'/relay',[],{stdio:['pipe','pipe','pipe']});log({event:'worker-start',pid:child.pid});child.stderr.on('data',function(b){log({stderr:String(b)});});child.on('error',function(e){log({error:String(e)});finish(1);});child.on('exit',onWorkerExit);
  child.stdout.on('data',function(b){buffer+=b;var i;while((i=buffer.indexOf('\n'))>=0){var line=buffer.slice(0,i);buffer=buffer.slice(i+1);if(line==='P'){lastAck=monotonic();continue;}log({event:'worker',message:line});if(line==='BACK_DOWN'){cancelResume();screenPolicy.back(true,monotonic());}if(line==='BACK_UP')screenPolicy.back(false,monotonic());if(line==='HOME'){screenPolicy.clearBack();homeSequence++;lastHomeAt=monotonic();diagnostic('home');}if(line==='READY'){ready=true;lastAck=monotonic();child.stdin.write(homeControl.enabled()?'E':'D');}if(line==='LGHOME'&&!stopping)visitLG();if(line==='HOME'&&homeControl.enabled()&&!visitingLG&&!stopping&&!launching){suppressReturnUntil=0;launching=true;launch('com.gathin.tvhome',function(ok){launching=false;if(!ok)child.stdin.end();});}}});
  child.stdin.on('error',function(){});
@@ -174,6 +203,7 @@ var screenWatch=require('./screen-watch')(data,screenLog,function(id){
  }
 },function(){lastForeground=null;lastForegroundAt=null;monitor='reset';monitorReason=null;lgHomeSince=null;screenPolicy.reset();diagnostic('monitor-reset');},function(p){
  log({event:'power',state:p.state,processing:p.processing,onOff:p.onOff});
+ replaceLgSaver(p);
  var sleeping=p.onOff==='off'||p.state==='Suspend'||p.state==='Active Standby'||/Suspend|Power Off|Standby/.test(p.processing||'');
  if(sleeping!==powerSleep){powerSleep=sleeping;powerChangedAt=monotonic();if(!sleeping)lastAck=monotonic();}
  if(p.onOff==='off'||p.state==='Active Standby'||p.state==='Suspend')cancelResume();

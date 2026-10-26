@@ -417,6 +417,8 @@
       var p = typeof raw === 'string' ? JSON.parse(raw) : raw;
       if (p && p.params) p = p.params;
       if (p && p.adhan && p.adhan.id) { p.adhan.test = p.adhan.id.indexOf('test-') === 0; startAdhan(p.adhan); }
+      // Home Helper cancelled LG's own screensaver: show ours instead.
+      else if (p && p.saver && settings.saver && !adhanEvent && (!panel || panel.hidden)) startSaver();
     } catch (_) {}
   }
   function tick() {
@@ -890,7 +892,7 @@
     sections = sectionItems(); view = 'main'; pane = 'cat'; secIndex = 0; itemIndex = 0;
     panel.className = 'prayer-panel'; panel.sheet.className = 'set-sheet'; panel.strip.hidden = true; panel.hidden = false;
     renderAll();
-    rpc(SERVICE + 'status', {probe: true}, function (r) { serviceStatus = r && r.returnValue ? 'تعمل · ' + ar(r.events) + ' موعدًا مجدولًا' : 'غير متاحة'; serviceDiag = r ? JSON.stringify({p: r.probe, u: r.uid, d: r.diag}) : 'no reply'; renderItems(); });
+    rpc(SERVICE + 'status', {probe: true}, function (r) { serviceStatus = r && r.returnValue ? 'تعمل · ' + ar(r.events) + ' موعدًا مجدولًا' : 'غير متاحة'; serviceDiag = r ? JSON.stringify({p: r.probe, d: r.diag}) : 'no reply'; renderItems(); });
   }
   function closePanel() {
     stopTest();
@@ -924,7 +926,10 @@
         if (PASS_KEYS.indexOf(e.keyCode) >= 0) return;
         e.preventDefault(); e.stopImmediatePropagation();
         finishAdhan();
-      } else if (saverOn && (!panel || panel.hidden)) { e.preventDefault(); e.stopImmediatePropagation(); stopSaver(); }
+      } else if (saverOn && (!panel || panel.hidden)) {
+        e.preventDefault(); e.stopImmediatePropagation();
+        if (e.keyCode !== 403) stopSaver(); // RED is the key Helper presses to cancel LG's screensaver
+      }
     }, true);
     document.addEventListener('webOSRelaunch', function (e) { idleAt = Date.now(); if (!panel || panel.hidden) stopSaver(); launchEvent(e && e.detail); });
     // EXIT closes our window: stop the adhan and go back. Coming back to Home shows a fresh verse.
