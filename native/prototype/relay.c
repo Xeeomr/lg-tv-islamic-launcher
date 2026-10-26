@@ -66,7 +66,7 @@ int main(int argc,char**argv){
  if(startup_reason){if(startup_reason==14)puts("FAIL source-held");if(startup_reason==16)puts("FAIL destination-busy");return startup_reason;}
  if(ioctl(in,GRAB,1)<0){puts("FAIL grab");return 17;}
  puts("READY");struct filter f={0};uint64_t last=ms();int reason=0;struct pollfd p[2]={{in,POLLIN,0},{0,POLLIN,0}};
- while(!stop){uint64_t now=ms();if(now-last>2000){reason=20;break;}if(filter_timeout(&f,now)==OPEN_LG)puts("LGHOME");
+ while(!stop){uint64_t now=ms();if(now-last>10000){reason=20;break;}if(filter_timeout(&f,now)==OPEN_LG)puts("LGHOME");
  int r=poll(p,2,50);if(r<0){if(errno==EINTR)continue;reason=23;break;}
  if(p[1].revents&(POLLHUP|POLLERR)){reason=24;break;}
  if(p[1].revents&POLLIN){char b[64];ssize_t n=read(0,b,sizeof b);if(n<=0){reason=24;break;}last=ms();for(int i=0;i<n;i++){if(b[i]=='D'){f.disabled=1;f.home=0;f.count=0;}if(b[i]=='E'){f.disabled=0;f.home=0;f.count=0;}if(b[i]=='Q')stop=1;if(b[i]=='S')raise(SIGSTOP);}puts("P");}

@@ -100,13 +100,14 @@ function finish(code,signal){if(stopping)return;stopping=true;if(screenWatch)scr
  }
  if(ready){var c=cp.spawn(root+'/relay',['cleanup'],{stdio:'ignore'});c.on('exit',function(n){log({event:'cleanup',code:n});cleaned();});}else cleaned();
 }
-// Standby/Quick Start freezes the worker and re-enumerates input devices on resume. Treat a worker exit
-// around a power change as recoverable: restart it instead of blocking Helper until a manual start.
+// Standby/Quick Start freezes the worker and re-enumerates input devices on resume, and a busy TV can
+// stall the controller past the worker's ping timeout (exit 20). Treat those exits as recoverable:
+// restart the worker instead of blocking Helper until a manual start; repeated failures still block.
 var powerSleep=false,powerChangedAt=0,powerRestarts=[];
 function onWorkerExit(code,signal){
  var now=monotonic();
  powerRestarts=powerRestarts.filter(function(t){return now-t<600000;});
- if(!stopping&&(powerSleep||now-powerChangedAt<45000)&&powerRestarts.length<6){
+ if(!stopping&&(code===20||powerSleep||now-powerChangedAt<45000)&&powerRestarts.length<6){
   powerRestarts.push(now);child=null;ready=false;buffer='';
   // The worker writes the emergency-stop flag on any unexpected exit; this one was the power change.
   try{fs.unlinkSync(data+'/blocked');}catch(e){}
